@@ -1,324 +1,275 @@
 ﻿# TheKavach - AI Cybersecurity Threat Intelligence Platform
 
-TheKavach is a synthetic cybersecurity telemetry streaming platform that generates
-real-time network security logs and analyzes them using AI. Instead of providing
-static CSV datasets for download, TheKavach operates as a live data infrastructure
-service where developers, researchers, and ML engineers can obtain personalized
-API keys and consume continuously generated firewall, network, ICMP, TCP, and
-application logs. The platform transforms a 6-million-row cybersecurity dataset
-into a dynamic simulation environment that mirrors how modern Security Operations
-Centers (SOCs) and SIEM systems operate in enterprise settings.
+TheKavach is a synthetic cybersecurity telemetry streaming platform that generates real-time network security logs and analyzes them using AI. Instead of providing static CSV datasets, it operates as a live data service where developers and ML engineers obtain API keys and consume continuously generated firewall, network, and application logs. The platform transforms a 6-million-row dataset into a dynamic simulation environment mirroring how modern SOCs and SIEM systems operate.
 
-The system is built on FastAPI for high-performance async-ready API delivery,
-uses a chunked data loading architecture to maintain minimal memory footprint
-suitable for free-tier cloud hosting, and integrates a MiniLM-based AI threat
-classification model trained on the original dataset. The AI engine normalizes
-raw log entries into semantic text, classifies threats as benign, suspicious,
-or malicious, assigns severity scores, and provides explainable reasoning for
-each prediction. The entire application is containerized with Docker and
-deployment-ready on Render, HuggingFace Spaces, or any cloud platform.
+| Feature | Detail |
+|---------|--------|
+| Dataset | 6 million cybersecurity log entries |
+| AI Model | MiniLM (all-MiniLM-L6-v2) fine-tuned for threat classification |
+| Backend | FastAPI with async support |
+| Frontend | HTML + TailwindCSS (no build step) |
+| Memory | Lazy chunk loading (~100MB vs 2-3GB full load) |
+| Deployment | Docker + Render (free tier compatible) |
+| Streaming | Server-Sent Events for real-time logs |
 
-## Architecture Overview
+## Architecture
 
-The platform follows a modular architecture designed for simplicity and future
-scalability. The backend consists of a FastAPI application that serves three
-primary functions: synthetic log generation, API key management, and AI-powered
-threat analysis. The log generation engine produces randomized security events
-by mutating timestamps, IP addresses, traffic sizes, protocols, and threat
-labels derived from the original dataset patterns. The AI analysis pipeline
-uses a normalization engine that converts structured log fields into canonical
-semantic sentences, which are then processed by a fine-tuned MiniLM transformer
-model for threat classification.
+`
+Raw Logs → LogNormalizer → Semantic Text → MiniLM → Threat Class → Severity → API
+                                                        ↓
+                                                benign/suspicious/malicious
+`
 
-The frontend is a minimal dark-themed web interface built with HTML, TailwindCSS,
-and vanilla JavaScript. It provides a landing page with API key generation, a
-live log viewer with real-time streaming via Server-Sent Events, comprehensive
-API documentation with code examples in multiple languages, and an interactive
-AI log analysis widget. The design intentionally avoids heavy frameworks and
-build steps, keeping the frontend lightweight and directly servable by the
-FastAPI backend.
+The platform has three core layers:
 
-Data loading uses a lazy chunk-swapping strategy where only two 200,000-row CSV
-chunks are held in memory at any time. When a request requires data from a
-different chunk, the system evicts the oldest loaded chunk and loads the new
-one. This approach reduces memory usage from approximately 2-3 gigabytes for
-the full dataset to under 100 megabytes, making the platform viable on Render's
-free tier with 512MB RAM limits. The Docker image includes only four chunks by
-default, further reducing the container size for deployment.
+| Layer | Responsibility | Tech |
+|-------|---------------|------|
+| Data | Chunked CSV loading, lazy swap | Pandas |
+| API | REST endpoints, SSE streaming, auth | FastAPI |
+| AI | Log normalization, threat classification | HuggingFace Transformers |
 
 ## Project Structure
-
-The project is organized into clearly separated modules for maintainability.
-The backend directory contains the FastAPI application entry point, API route
-handlers split between core endpoints and AI analysis endpoints, authentication
-middleware for API key validation, a log generator that produces synthetic
-security events, and a data loader that manages chunked CSV files. The models
-directory houses the AI inference engine including the log normalizer that
-converts raw log fields into semantic text, the threat intelligence engine
-that wraps the HuggingFace transformer pipeline with severity scoring and
-explainability logic, and a Gradio-based application template for HuggingFace
-Spaces deployment.
-
-The frontend directory contains three HTML files: the main landing page with
-API key generation and AI analysis widget, the API documentation page with
-tabbed code examples for cURL, Python, Node.js, and C++, and the live log
-viewer that connects to the SSE streaming endpoint. The notebooks directory
-holds the comprehensive 10-step Jupyter notebook that guides users through
-dataset exploration, log normalization, data cleaning, feature engineering,
-transformer training with MiniLM, severity engine construction, SHAP-based
-explainability, ONNX optimization, and HuggingFace model deployment. The
-dataset directory contains the original 834MB CSV file excluded from Git and
-thirty 25MB chunk files that are Git-compatible.
 
 `
 TheKavach/
 ├── backend/
-│   ├── main.py                 # FastAPI app entry point
+│   ├── main.py                 # FastAPI app entry, serves frontend
 │   ├── api/
-│   │   ├── routes.py           # Core API endpoints
+│   │   ├── routes.py           # Core endpoints (logs, stream, health, status)
 │   │   ├── ai_routes.py        # AI analysis endpoints
 │   │   └── auth.py             # API key middleware
 │   ├── generators/
-│   │   ├── log_generator.py    # Synthetic log engine
-│   │   └── data_loader.py      # Lazy chunk loader
+│   │   ├── log_generator.py    # Synthetic log generation engine
+│   │   └── data_loader.py      # Lazy chunk-swapping CSV loader
 │   ├── models/
-│   │   └── schemas.py          # Pydantic models
-│   └── requirements.txt
+│   │   └── schemas.py          # Pydantic request/response models
+│   └── requirements.txt        # Core dependencies
 ├── frontend/
-│   ├── index.html              # Landing page + AI widget
-│   ├── docs.html               # API documentation
-│   └── viewer.html             # Live log viewer
+│   ├── index.html              # Landing page + API key gen + AI widget
+│   ├── docs.html               # API docs with multi-language examples
+│   └── viewer.html             # Live SSE log viewer
 ├── models/
-│   ├── inference.py            # AI inference engine
-│   ├── app.py                  # HuggingFace Space (Gradio)
-│   └── requirements.txt
+│   ├── inference.py            # AI inference engine (normalizer + classifier)
+│   ├── app.py                  # HuggingFace Space (Gradio interface)
+│   └── requirements.txt        # AI dependencies
 ├── notebooks/
-│   └── 01_cybersecurity_threat_intelligence.ipynb
+│   └── 01_cybersecurity_threat_intelligence.ipynb  # 10-step training guide
 ├── dataset/
-│   └── chunks/                 # 30 x 25MB CSV files
-├── Dockerfile
-├── render.yaml
+│   └── chunks/                 # 30 x 25MB CSV files (Git-compatible)
+├── Dockerfile                  # Optimized container (4 chunks only)
+├── render.yaml                 # Render deployment blueprint
 └── README.md
 `
 
-## Dataset and Chunking Strategy
-
-The original cybersecurity dataset contains 6 million log entries across ten
-columns including timestamp, source IP, destination IP, protocol, action,
-threat label, log type, bytes transferred, user agent, and request path.
-At 834MB, this file exceeds GitHub's 100MB per-file limit and would consume
-excessive memory if loaded entirely. The solution splits the dataset into
-thirty approximately 28MB chunk files, each containing 200,000 rows. These
-chunks are small enough to push to GitHub individually and can be loaded
-selectively at runtime.
-
-The lazy loading system discovers all available chunk files at startup and
-loads only the first two into memory. When a request needs data from a chunk
-that is not currently loaded, the system removes the oldest loaded chunk from
-memory and loads the requested one. This swap mechanism ensures that memory
-usage stays constant regardless of the total number of chunks. The total row
-count is calculated from the known rows-per-chunk multiplied by the number of
-discovered chunks, avoiding the need to load all data just to report statistics.
-
 ## API Endpoints
 
-The platform exposes a RESTful API under the /api prefix with authentication
-via Bearer tokens. The POST /api/generate-key endpoint accepts a user name
-and returns a unique API key prefixed with tk_. This key must be included
-in the Authorization header for all subsequent requests except health checks
-and status queries.
+### Core Endpoints
 
-The GET /api/logs endpoint returns a batch of synthetic log entries with
-optional filtering by threat label, log type, and protocol. The count
-parameter controls the number of entries returned, ranging from 1 to 500.
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | /api/generate-key | No | Generate API key from name |
+| GET | /api/logs | Yes | Fetch batch of synthetic logs |
+| GET | /api/stream | Yes | SSE real-time log streaming |
+| GET | /api/health | No | System health check |
+| GET | /api/status | No | Uptime, dataset info, metrics |
+| GET | /api/stats | Yes | Threat/protocol distributions |
 
-The GET /api/stream endpoint provides Server-Sent Events for continuous
-real-time log streaming. Clients connect once and receive log entries at
-a configurable interval between 0.1 and 10 seconds. The threat_label query
-parameter filters the stream to only emit entries matching a specific threat
-level.
+### AI Endpoints
 
-The GET /api/health endpoint returns the system status, total dataset rows,
-and uptime without requiring authentication. The GET /api/status endpoint
-provides detailed metrics including formatted uptime, dataset column names,
-total rows, API key count, platform version, and timestamps. The GET /api/stats
-endpoint returns distribution statistics for threat labels, protocols, and
-log types computed across all available chunks.
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | /api/ai/analyze | No | Analyze single log entry |
+| POST | /api/ai/analyze-batch | No | Analyze up to 100 logs |
+| POST | /api/ai/analyze-text | No | Analyze pre-normalized text |
+| GET | /api/ai/status | No | Check AI model availability |
 
-### AI Analysis Endpoints
+### Query Parameters
 
-The AI analysis endpoints are grouped under /api/ai. The POST /api/ai/analyze
-endpoint accepts a structured log object with protocol, action, user agent,
-request path, bytes transferred, and log type fields. It normalizes the log
-into semantic text, runs it through the MiniLM classifier, and returns the
-predicted threat level, confidence score, severity rating, all class
-probabilities, and an explanation of why the log was flagged.
-
-The POST /api/ai/analyze-batch endpoint accepts up to 100 logs and returns
-analysis results for each. The POST /api/ai/analyze-text endpoint accepts
-pre-normalized text directly for classification. The GET /api/ai/status
-endpoint reports whether the AI model is loaded and available, showing the
-HuggingFace model name and a list of capabilities.
-
-## AI Threat Intelligence Engine
-
-The AI component transforms TheKavach from a simple log generator into a
-semantic cybersecurity intelligence system. The pipeline begins with the
-LogNormalizer class, which converts structured log fields into natural
-language sentences. For example, a log with protocol TCP, action blocked,
-user agent Nmap Scripting Engine, request path /admin/config, and bytes
-transferred 45000 becomes the sentence:
-
-> Blocked TCP connection detected by firewall log using nmap scanner
-> targeting high-risk path with large data transfer.
-
-This normalization is critical because it allows the transformer model to
-understand cybersecurity concepts semantically rather than as isolated
-categorical values. The normalizer maps protocols to descriptive phrases,
-identifies security scanners by matching user agent strings against a known
-list including Nmap, SQLMap, Nikto, and others, classifies request paths
-into risk categories based on suspicious patterns like admin, config,
-backup, and login endpoints, and categorizes data transfer volumes into
-qualitative descriptions.
-
-The ThreatIntelligenceEngine wraps a HuggingFace text classification pipeline
-built on the all-MiniLM-L6-v2 model, which is a lightweight transformer with
-approximately 22 million parameters. The model is fine-tuned to classify
-normalized log text into three categories: benign representing normal network
-traffic, suspicious representing anomalous but not definitively malicious
-activity, and malicious representing confirmed threat behavior.
-
-The engine computes severity scores by combining the predicted threat category
-with the confidence level. A malicious prediction with over 95 percent
-confidence receives a Critical severity rating, while lower confidence
-predictions receive proportionally reduced severity. The engine also generates
-human-readable explanations by analyzing the normalized text for indicators
-such as scanner detection, blocked actions, high-risk path targeting,
-authentication endpoint access, and unusual data transfer volumes.
-
-## Training the AI Model
-
-The training process is documented in the notebook
-notebooks/01_cybersecurity_threat_intelligence.ipynb, which implements a
-complete 10-step roadmap:
-
-**Step 1** explores the dataset to understand attack patterns, protocol
-distributions, action frequencies, and the distinguishing characteristics
-between malicious and benign logs.
-
-**Step 2** builds the LogNormalizer engine that converts raw logs into
-semantic text suitable for NLP processing.
-
-**Step 3** cleans the data by removing null values and duplicates, then
-maps threat labels to integer classes (benign=0, suspicious=1, malicious=2).
-
-**Step 4** adds structured features including logarithmic byte counts,
-protocol encodings, path depth measurements, path risk scores, scanner
-detection flags, user agent entropy calculations, and hour-of-day indicators.
-
-**Step 5** tokenizes the normalized text using the MiniLM tokenizer with a
-maximum length of 128 tokens and splits the data into training and test sets
-with stratified sampling.
-
-**Step 6** fine-tunes the MiniLM model using the HuggingFace Trainer API
-with a learning rate of 2e-5, batch size of 32, three training epochs, and
-FP16 mixed precision for faster training on GPU.
-
-**Step 7** implements the severity and confidence engine that converts raw
-predictions into SOC-style intelligence reports with prioritization.
-
-**Step 8** trains a Random Forest classifier on the structured features and
-uses SHAP to provide feature-level explainability for why specific logs
-are flagged as threats.
-
-**Step 9** exports the trained model to ONNX format for optimized inference
-and benchmarks throughput to measure inference speed.
-
-**Step 10** creates the production inference function and prepares the model
-for HuggingFace Hub upload with a model card and configuration.
-
-After training in Google Colab or Kaggle, the model is pushed to HuggingFace
-as OMCHOKSI108/CyberKavach. The platform automatically downloads and uses
-this model when the AI analysis endpoints are called.
-
-## Deployment
-
-The platform is designed for one-click deployment on Render using the
-included render.yaml blueprint. The Dockerfile builds a lightweight image
-based on python:3.11-slim that installs only the core dependencies and
-copies four dataset chunks. The total image size is optimized to stay
-within Render's build limits.
-
-The render.yaml configuration specifies Docker as the build environment,
-sets the health check path to /api/health, and configures the free tier
-plan. Deployment requires pushing the code to a GitHub repository and
-connecting it to Render, which automatically detects the render.yaml file
-and builds the container.
-
-For local development, the platform can be started with a single uvicorn
-command after installing the requirements. Docker Compose is also available
-for containerized local testing. The AI model is not required for the core
-platform to function. The log generation, streaming, and API key management
-endpoints work without any ML dependencies.
+| Parameter | Endpoint | Type | Default | Description |
+|-----------|----------|------|---------|-------------|
+| count | /logs | int | 50 | Number of logs (1-500) |
+| 	hreat_label | /logs, /stream | string | - | Filter: benign, suspicious, malicious |
+| log_type | /logs | string | - | Filter: firewall, ids, application |
+| protocol | /logs | string | - | Filter: TCP, UDP, HTTP, HTTPS, etc. |
+| interval | /stream | float | 1.0 | Seconds between entries (0.1-10) |
 
 ## Quick Start
 
-Install the backend dependencies using pip install -r backend/requirements.txt
-from the project root directory. Start the server with the command:
+### Local Development
 
 `ash
+# Install dependencies
+pip install -r backend/requirements.txt
+
+# Start server
 python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
 `
 
-The web interface is available at http://localhost:8000, the API documentation
-at http://localhost:8000/docs, the live log viewer at http://localhost:8000/viewer,
-and the Swagger UI at http://localhost:8000/api/docs.
+| URL | Purpose |
+|-----|---------|
+| http://localhost:8000 | Landing page + AI widget |
+| http://localhost:8000/docs | API documentation |
+| http://localhost:8000/viewer | Live log viewer |
+| http://localhost:8000/api/docs | Swagger UI |
 
-Generate an API key through the web interface or by sending a POST request
-to /api/generate-key with your name in the request body. Use the generated
-key in the Authorization header as Bearer tk_your_key for all authenticated
-endpoints.
+### Generate API Key
 
-To train the AI model, open the notebook in Google Colab, connect to a GPU
-runtime, and execute all cells sequentially. After the model is pushed to
-HuggingFace, restart the platform server and the AI analysis endpoints will
-automatically download and use the trained model.
+`ash
+curl -X POST http://localhost:8000/api/generate-key \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Your Name"}'
+`
+
+### Fetch Logs
+
+`ash
+curl "http://localhost:8000/api/logs?count=50&threat_label=malicious" \
+  -H "Authorization: Bearer tk_your_key"
+`
+
+### AI Analysis
+
+`ash
+curl -X POST http://localhost:8000/api/ai/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "protocol": "TCP",
+    "action": "blocked",
+    "user_agent": "Nmap Scripting Engine",
+    "request_path": "/admin/config",
+    "bytes_transferred": 45000,
+    "log_type": "firewall"
+  }'
+`
+
+### AI Response Format
+
+`json
+{
+  "threat": "malicious",
+  "confidence": 0.9652,
+  "confidence_pct": "96.5%",
+  "severity": "Critical",
+  "all_scores": { "benign": 0.012, "suspicious": 0.023, "malicious": 0.965 },
+  "explanation": [
+    "Nmap scanner detected",
+    "Request blocked/denied by security controls",
+    "Targeting high-risk path (admin/config/backup)"
+  ]
+}
+`
+
+## AI Threat Intelligence
+
+The AI pipeline converts raw structured logs into semantic text, then classifies them using a fine-tuned MiniLM transformer.
+
+### Normalization Examples
+
+| Raw Log Fields | Normalized Text |
+|---------------|-----------------|
+| TCP, blocked, Nmap, /admin/config | Blocked TCP connection detected by firewall log using nmap scanner targeting high-risk path |
+| HTTP, allowed, Chrome, /login | Permitted HTTP request recorded by application log accessing authentication path |
+| HTTPS, blocked, SQLMap, /api/login | Blocked HTTPS secure request detected by ids log using sqlmap scanner targeting authentication path |
+
+### Threat Classification
+
+| Label | Meaning | Distribution |
+|-------|---------|-------------|
+| benign | Normal network traffic | ~70% |
+| suspicious | Anomalous but not confirmed | ~20% |
+| malicious | Confirmed threat behavior | ~10% |
+
+### Severity Scoring
+
+| Confidence | Malicious | Suspicious | Benign |
+|------------|-----------|------------|--------|
+| > 95% | Critical | High | Low |
+| > 85% | High | Medium | Low |
+| > 70% | Medium | Medium | Informational |
+| < 70% | Informational | Informational | Informational |
+
+## Training the AI Model
+
+The complete training process is in 
+otebooks/01_cybersecurity_threat_intelligence.ipynb:
+
+| Step | Task | Output |
+|------|------|--------|
+| 1 | Dataset exploration | Attack patterns, distributions |
+| 2 | Log normalization engine | Raw logs → semantic text |
+| 3 | Data cleaning & labeling | Clean dataset with integer labels |
+| 4 | Structured features | Bytes, protocol, path risk, scanner flags |
+| 5 | Tokenization | MiniLM tokens, train/test split |
+| 6 | Model training | Fine-tuned MiniLM classifier |
+| 7 | Severity engine | SOC-style intelligence reports |
+| 8 | SHAP explainability | Feature importance analysis |
+| 9 | ONNX optimization | Fast inference export |
+| 10 | HuggingFace upload | Deployed model on HF Hub |
+
+After training in Google Colab, push the model to HuggingFace:
+
+`python
+from huggingface_hub import HfApi
+api = HfApi()
+api.create_repo(repo_id="OMCHOKSI108/CyberKavach", repo_type="model")
+api.upload_folder(folder_path="models/cyber-threat-model", repo_id="OMCHOKSI108/CyberKavach")
+`
+
+The platform automatically downloads and uses the model when AI endpoints are called.
+
+## Memory Optimization
+
+The original 834MB CSV is split into 30 chunks of ~28MB each. The lazy loader keeps only 2 chunks in memory at any time:
+
+| Approach | Memory Usage | Load Time |
+|----------|-------------|-----------|
+| Load all 6M rows | ~2-3 GB | 30-60s |
+| Lazy chunk loading (2 chunks) | ~56 MB | 2-5s |
+| Docker (4 chunks in image) | ~112 MB image | Instant |
+
+The Dockerfile copies only 4 chunks to keep the container size manageable for Render's free tier.
+
+## Deployment
+
+### Render (Free Tier)
+
+1. Push code to GitHub
+2. Connect repository to [Render](https://render.com)
+3. Render auto-detects ender.yaml and builds via Docker
+4. Platform live at https://your-app.onrender.com
+
+| Setting | Value |
+|---------|-------|
+| Build | Docker |
+| Plan | Free (512MB RAM) |
+| Health Check | /api/health |
+| Port | 8000 |
+
+### Docker Compose (Local)
+
+`ash
+docker-compose -f docker/docker-compose.yml up --build
+`
+
+### HuggingFace Space
+
+The models/app.py file provides a Gradio interface. Deploy by creating a new Space with the models/ directory contents.
 
 ## Technology Stack
 
-The backend uses FastAPI for the web framework, providing automatic OpenAPI
-documentation, async request handling, and Pydantic-based data validation.
-Pandas handles CSV data loading and manipulation with the custom chunk-swapping
-loader. The AI pipeline uses HuggingFace Transformers for the MiniLM model,
-PyTorch for tensor operations, and scikit-learn for the Random Forest
-explainer and train-test splitting. SHAP provides feature importance
-visualization for structured feature analysis. ONNX enables model export
-for optimized inference in production environments.
-
-The frontend uses vanilla HTML with TailwindCSS loaded from CDN for styling,
-requiring no build step or Node.js dependencies. Server-Sent Events provide
-real-time log streaming without the complexity of WebSocket connections. The
-Docker container uses python:3.11-slim as the base image to minimize size
-and attack surface. Render handles container orchestration, health checking,
-and automatic HTTPS certificate provisioning.
-
-## Future Roadmap
-
-The platform is designed to evolve from its current MVP state into a
-comprehensive cyber data infrastructure. Planned upgrades include WebSocket-based
-bidirectional real-time streaming for interactive threat simulation, dedicated
-threat simulation modes that generate DDoS, malware, phishing, and brute force
-attack patterns with realistic timing and behavior, and multi-source telemetry
-generation that produces Windows event logs, DNS query logs, cloud access logs,
-and email security logs.
-
-A Kafka-based high-throughput pipeline would replace the current REST API for
-scenarios requiring millions of events per second, enabling integration with
-enterprise SIEM systems. User dashboards with analytics would provide
-visualization of threat trends, attack frequency over time, and geographic
-IP distribution. Model benchmarking capabilities would allow researchers to
-compare different ML models on the same synthetic dataset with standardized
-metrics.
+| Category | Technology | Purpose |
+|----------|-----------|---------|
+| Backend | FastAPI | REST API, async, auto docs |
+| Data | Pandas | CSV loading, chunk management |
+| AI | HuggingFace Transformers | MiniLM text classification |
+| AI | PyTorch | Tensor operations |
+| AI | scikit-learn | Random Forest explainer |
+| AI | SHAP | Feature importance |
+| AI | ONNX | Optimized inference |
+| Frontend | HTML + TailwindCSS | Dark-themed UI |
+| Streaming | Server-Sent Events | Real-time log delivery |
+| Container | Docker (python:3.11-slim) | Portable deployment |
+| Cloud | Render | Free-tier hosting |
 
 ## License
 
