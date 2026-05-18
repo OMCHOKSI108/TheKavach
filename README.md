@@ -30,7 +30,7 @@ The platform has three core layers:
 
 ## Project Structure
 
-`
+
 TheKavach/
 ├── backend/
 │   ├── main.py                 # FastAPI app entry, serves frontend
@@ -59,7 +59,7 @@ TheKavach/
 ├── Dockerfile                  # Optimized container (4 chunks only)
 ├── render.yaml                 # Render deployment blueprint
 └── README.md
-`
+
 
 ## API Endpoints
 
