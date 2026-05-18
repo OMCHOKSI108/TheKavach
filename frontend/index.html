@@ -1,0 +1,166 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TheKavach - Cybersecurity Telemetry Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: { 900: '#0a0a0f', 800: '#12121a', 700: '#1a1a2e', 600: '#252540' },
+                        accent: { DEFAULT: '#00ff88', dim: '#00cc6a' },
+                        threat: { benign: '#00ff88', suspicious: '#ffaa00', malicious: '#ff4444' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background: #0a0a0f; color: #e0e0e0; }
+        .glow { box-shadow: 0 0 20px rgba(0,255,136,0.3); }
+        .glow:hover { box-shadow: 0 0 30px rgba(0,255,136,0.5); }
+        .log-row { transition: all 0.2s; }
+        .log-row:hover { background: #252540; }
+        @keyframes pulse-green { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .pulse { animation: pulse-green 2s infinite; }
+    </style>
+</head>
+<body class="min-h-screen">
+    <nav class="border-b border-dark-600 bg-dark-800/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <span class="text-accent text-2xl font-bold tracking-wider">THEKAVACH</span>
+                <span class="text-xs bg-dark-600 px-2 py-1 rounded text-gray-400">v1.0</span>
+            </div>
+            <div class="flex gap-6 text-sm">
+                <a href="/" class="text-accent hover:text-accent-dim transition">Home</a>
+                <a href="/docs" class="text-gray-400 hover:text-accent transition">API Docs</a>
+                <a href="/viewer" class="text-gray-400 hover:text-accent transition">Live Viewer</a>
+                <a href="/api/docs" class="text-gray-400 hover:text-accent transition">Swagger</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-6 py-12">
+        <section class="text-center mb-16">
+            <h1 class="text-5xl font-bold mb-4">
+                <span class="text-accent">Synthetic Cybersecurity</span><br>
+                <span class="text-white">Telemetry Streaming Platform</span>
+            </h1>
+            <p class="text-gray-400 text-lg max-w-2xl mx-auto mb-8">
+                Real-time cybersecurity log streaming API for ML training, anomaly detection research, and threat modeling. 
+                Generate unlimited synthetic firewall, network, and application logs.
+            </p>
+            <div class="flex justify-center gap-4 text-sm">
+                <span class="bg-dark-700 px-4 py-2 rounded-lg border border-dark-600">6M+ Dataset Rows</span>
+                <span class="bg-dark-700 px-4 py-2 rounded-lg border border-dark-600">SSE Streaming</span>
+                <span class="bg-dark-700 px-4 py-2 rounded-lg border border-dark-600">REST API</span>
+            </div>
+        </section>
+
+        <section class="max-w-xl mx-auto mb-16">
+            <div class="bg-dark-800 rounded-xl border border-dark-600 p-8 glow">
+                <h2 class="text-xl font-semibold mb-6 text-white">Generate Your API Key</h2>
+                <div class="flex gap-3 mb-4">
+                    <input type="text" id="nameInput" placeholder="Enter your name" 
+                        class="flex-1 bg-dark-900 border border-dark-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-accent transition">
+                    <button onclick="generateKey()" 
+                        class="bg-accent text-dark-900 font-semibold px-6 py-3 rounded-lg hover:bg-accent-dim transition">
+                        Generate
+                    </button>
+                </div>
+                <div id="keyResult" class="hidden">
+                    <div class="bg-dark-900 rounded-lg p-4 border border-dark-600 flex justify-between items-center">
+                        <code id="apiKey" class="text-accent text-sm break-all"></code>
+                        <button onclick="copyKey()" class="ml-3 text-gray-400 hover:text-accent transition text-sm">Copy</button>
+                    </div>
+                    <p id="keyMessage" class="text-xs text-gray-500 mt-2"></p>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-16">
+            <h2 class="text-2xl font-semibold mb-6 text-white">API Endpoints</h2>
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-dark-800 rounded-lg border border-dark-600 p-5">
+                    <span class="text-green-400 text-xs font-mono">POST</span>
+                    <code class="block text-white mt-1">/api/generate-key</code>
+                    <p class="text-gray-500 text-sm mt-2">Generate a new API key</p>
+                </div>
+                <div class="bg-dark-800 rounded-lg border border-dark-600 p-5">
+                    <span class="text-blue-400 text-xs font-mono">GET</span>
+                    <code class="block text-white mt-1">/api/logs</code>
+                    <p class="text-gray-500 text-sm mt-2">Fetch batch of synthetic logs</p>
+                </div>
+                <div class="bg-dark-800 rounded-lg border border-dark-600 p-5">
+                    <span class="text-purple-400 text-xs font-mono">GET</span>
+                    <code class="block text-white mt-1">/api/stream</code>
+                    <p class="text-gray-500 text-sm mt-2">SSE real-time log stream</p>
+                </div>
+                <div class="bg-dark-800 rounded-lg border border-dark-600 p-5">
+                    <span class="text-yellow-400 text-xs font-mono">GET</span>
+                    <code class="block text-white mt-1">/api/health</code>
+                    <p class="text-gray-500 text-sm mt-2">System health check</p>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 class="text-2xl font-semibold mb-6 text-white">Quick Start</h2>
+            <div class="bg-dark-800 rounded-lg border border-dark-600 p-6">
+                <pre class="text-sm text-gray-300 overflow-x-auto"><code># 1. Generate your API key
+curl -X POST http://localhost:8000/api/generate-key \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Your Name"}'
+
+# 2. Fetch logs
+curl http://localhost:8000/api/logs?count=100 \
+  -H "Authorization: Bearer tk_your_key"
+
+# 3. Stream logs in real-time
+curl http://localhost:8000/api/stream?interval=0.5 \
+  -H "Authorization: Bearer tk_your_key"
+
+# 4. Python example
+import requests
+response = requests.get("http://localhost:8000/api/logs",
+    headers={"Authorization": "Bearer tk_your_key"},
+    params={"count": 100, "threat_label": "malicious"})
+logs = response.json()</code></pre>
+            </div>
+        </section>
+    </main>
+
+    <footer class="border-t border-dark-600 mt-20 py-8 text-center text-gray-600 text-sm">
+        TheKavach - Synthetic Cybersecurity Telemetry Platform
+    </footer>
+
+    <script>
+        async function generateKey() {
+            const name = document.getElementById('nameInput').value.trim();
+            if (!name) return alert('Please enter your name');
+            try {
+                const res = await fetch('/api/generate-key', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+                const data = await res.json();
+                document.getElementById('apiKey').textContent = data.api_key;
+                document.getElementById('keyMessage').textContent = data.message;
+                document.getElementById('keyResult').classList.remove('hidden');
+            } catch (e) {
+                alert('Error generating key: ' + e.message);
+            }
+        }
+        function copyKey() {
+            const key = document.getElementById('apiKey').textContent;
+            navigator.clipboard.writeText(key);
+            alert('API key copied to clipboard!');
+        }
+    </script>
+</body>
+</html>

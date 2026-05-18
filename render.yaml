@@ -1,0 +1,10 @@
+﻿services:
+  - type: web
+    name: thekavach
+    env: docker
+    dockerfilePath: ./docker/Dockerfile
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
