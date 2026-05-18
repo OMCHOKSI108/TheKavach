@@ -1,13 +1,13 @@
-﻿from fastapi import APIRouter, Depends, Query, HTTPException
+﻿from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
 from typing import Optional
 import json
 import asyncio
+from datetime import datetime
 from ..models.schemas import KeyRequest, KeyResponse, LogsResponse, HealthResponse
 from ..api.auth import generate_api_key, api_key_store
 from ..generators.log_generator import log_generator
 from ..generators.data_loader import data_loader
-from datetime import datetime
 
 router = APIRouter()
 start_time = datetime.now()
@@ -70,11 +70,41 @@ async def health_check():
         uptime=str(uptime)
     )
 
+@router.get("/status", tags=["System"])
+async def get_status():
+    uptime = datetime.now() - start_time
+    total_seconds = int(uptime.total_seconds())
+    days = total_seconds // 86400
+    hours = (total_seconds % 86400) // 3600
+    minutes = (total_seconds % 3600) // 60
+    seconds = total_seconds % 60
+    df = data_loader.get_dataframe()
+    return {
+        "status": "operational",
+        "uptime": {
+            "raw": str(uptime),
+            "days": days,
+            "hours": hours,
+            "minutes": minutes,
+            "seconds": seconds,
+            "formatted": f"{days}d {hours}h {minutes}m {seconds}s"
+        },
+        "dataset": {
+            "total_rows": len(df) if df is not None else 0,
+            "columns": list(df.columns) if df is not None else []
+        },
+        "api_keys_generated": len(api_key_store),
+        "version": "1.0.0",
+        "started_at": start_time.isoformat(),
+        "current_time": datetime.now().isoformat()
+    }
+
 @router.get("/stats", tags=["System"])
 async def get_stats():
+    df = data_loader.get_dataframe()
     return {
         "total_keys_generated": len(api_key_store),
-        "dataset_columns": list(data_loader.get_dataframe().columns) if data_loader.get_dataframe() is not None else [],
+        "dataset_columns": list(df.columns) if df is not None else [],
         "threat_distribution": data_loader.get_column_stats("threat_label"),
         "protocol_distribution": data_loader.get_column_stats("protocol"),
         "log_type_distribution": data_loader.get_column_stats("log_type")

@@ -2,7 +2,7 @@
   - type: web
     name: thekavach
     env: docker
-    dockerfilePath: ./docker/Dockerfile
+    dockerfilePath: ./Dockerfile
     plan: free
     healthCheckPath: /api/health
     envVars:

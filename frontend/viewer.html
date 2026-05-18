@@ -5,96 +5,102 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Viewer - TheKavach</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        dark: { 900: '#0a0a0f', 800: '#12121a', 700: '#1a1a2e', 600: '#252540' },
-                        accent: { DEFAULT: '#00ff88', dim: '#00cc6a' },
-                        threat: { benign: '#00ff88', suspicious: '#ffaa00', malicious: '#ff4444' }
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        body { background: #0a0a0f; color: #e0e0e0; }
-        .log-table { font-size: 0.75rem; }
-        .log-table th { position: sticky; top: 0; background: #12121a; z-index: 10; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #09090b; color: #e4e4e7; font-family: 'Inter', system-ui, sans-serif; }
+        .grid-pillar {
+            background-image:
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .border-subtle { border-color: #27272a; }
+        .text-muted { color: #71717a; }
+        .text-accent { color: #22c55e; }
+        .bg-accent { background: #22c55e; }
+        .bg-accent:hover { background: #16a34a; }
+        .bg-card { background: #111113; }
+        .font-mono { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+        .log-table { font-size: 0.7rem; }
+        .log-table th { position: sticky; top: 0; background: #111113; z-index: 10; }
         .log-container { max-height: 70vh; overflow-y: auto; }
-        .threat-benign { color: #00ff88; }
-        .threat-suspicious { color: #ffaa00; }
-        .threat-malicious { color: #ff4444; }
+        .threat-benign { color: #22c55e; }
+        .threat-suspicious { color: #eab308; }
+        .threat-malicious { color: #ef4444; }
     </style>
 </head>
-<body class="min-h-screen">
-    <nav class="border-b border-dark-600 bg-dark-800/80 backdrop-blur sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-            <a href="/" class="text-accent text-xl font-bold">THEKAVACH</a>
-            <div class="flex gap-6 text-sm">
-                <a href="/" class="text-gray-400 hover:text-accent transition">Home</a>
-                <a href="/docs" class="text-gray-400 hover:text-accent transition">API Docs</a>
-                <a href="/viewer" class="text-accent">Live Viewer</a>
+<body class="min-h-screen flex">
+    <div class="grid-pillar w-16 fixed left-0 top-0 bottom-0 border-r border-subtle"></div>
+    <div class="grid-pillar w-16 fixed right-0 top-0 bottom-0 border-l border-subtle"></div>
+
+    <div class="flex-1 ml-16 mr-16">
+        <nav class="border-b border-subtle bg-[#09090b] sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+                <a href="/" class="text-accent text-lg font-semibold">THEKAVACH</a>
+                <div class="flex gap-6 text-sm">
+                    <a href="/" class="text-muted hover:text-zinc-300 transition">Home</a>
+                    <a href="/docs" class="text-muted hover:text-zinc-300 transition">API Docs</a>
+                    <a href="/viewer" class="text-accent">Live Viewer</a>
+                </div>
             </div>
-        </div>
-    </nav>
+        </nav>
 
-    <main class="max-w-7xl mx-auto px-6 py-8">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold text-white">Live Log Stream</h1>
-            <div class="flex gap-3 items-center">
-                <select id="threatFilter" class="bg-dark-800 border border-dark-600 rounded px-3 py-2 text-sm">
-                    <option value="">All Threats</option>
-                    <option value="benign">Benign</option>
-                    <option value="suspicious">Suspicious</option>
-                    <option value="malicious">Malicious</option>
-                </select>
-                <select id="intervalSelect" class="bg-dark-800 border border-dark-600 rounded px-3 py-2 text-sm">
-                    <option value="0.2">0.2s</option>
-                    <option value="0.5">0.5s</option>
-                    <option value="1" selected>1s</option>
-                    <option value="2">2s</option>
-                </select>
-                <button id="toggleBtn" onclick="toggleStream()" class="bg-accent text-dark-900 font-semibold px-4 py-2 rounded text-sm hover:bg-accent-dim transition">
-                    Start
-                </button>
-                <button onclick="clearLogs()" class="bg-dark-700 text-gray-300 px-4 py-2 rounded text-sm hover:bg-dark-600 transition">
-                    Clear
-                </button>
+        <main class="max-w-7xl mx-auto px-6 py-8">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-lg font-medium text-white">Live Log Stream</h1>
+                <div class="flex gap-2 items-center">
+                    <select id="threatFilter" class="bg-zinc-900 border border-subtle rounded px-3 py-1.5 text-xs text-zinc-300">
+                        <option value="">All Threats</option>
+                        <option value="benign">Benign</option>
+                        <option value="suspicious">Suspicious</option>
+                        <option value="malicious">Malicious</option>
+                    </select>
+                    <select id="intervalSelect" class="bg-zinc-900 border border-subtle rounded px-3 py-1.5 text-xs text-zinc-300">
+                        <option value="0.2">0.2s</option>
+                        <option value="0.5">0.5s</option>
+                        <option value="1" selected>1s</option>
+                        <option value="2">2s</option>
+                    </select>
+                    <button id="toggleBtn" onclick="toggleStream()" class="bg-accent text-black font-medium px-4 py-1.5 rounded text-xs transition">
+                        Start
+                    </button>
+                    <button onclick="clearLogs()" class="bg-zinc-900 text-zinc-400 px-4 py-1.5 rounded text-xs border border-subtle hover:text-zinc-300 transition">
+                        Clear
+                    </button>
+                </div>
             </div>
-        </div>
 
-        <div class="bg-dark-800 rounded-lg border border-dark-600 mb-4 p-3 flex justify-between text-sm">
-            <span>Logs received: <span id="logCount" class="text-accent font-mono">0</span></span>
-            <span>Malicious: <span id="malCount" class="text-red-400 font-mono">0</span></span>
-            <span>Suspicious: <span id="susCount" class="text-yellow-400 font-mono">0</span></span>
-            <span>Benign: <span id="benCount" class="text-green-400 font-mono">0</span></span>
-        </div>
+            <div class="bg-card rounded border border-subtle mb-3 p-3 flex justify-between text-xs">
+                <span>Logs: <span id="logCount" class="text-accent font-mono">0</span></span>
+                <span>Malicious: <span id="malCount" class="text-red-500 font-mono">0</span></span>
+                <span>Suspicious: <span id="susCount" class="text-yellow-500 font-mono">0</span></span>
+                <span>Benign: <span id="benCount" class="text-green-500 font-mono">0</span></span>
+            </div>
 
-        <div class="log-container bg-dark-800 rounded-lg border border-dark-600">
-            <table class="w-full log-table">
-                <thead>
-                    <tr class="border-b border-dark-600 text-left text-gray-400">
-                        <th class="px-4 py-3">Timestamp</th>
-                        <th class="px-4 py-3">Source IP</th>
-                        <th class="px-4 py-3">Dest IP</th>
-                        <th class="px-4 py-3">Protocol</th>
-                        <th class="px-4 py-3">Action</th>
-                        <th class="px-4 py-3">Threat</th>
-                        <th class="px-4 py-3">Type</th>
-                        <th class="px-4 py-3">Bytes</th>
-                        <th class="px-4 py-3">Path</th>
-                    </tr>
-                </thead>
-                <tbody id="logBody"></tbody>
-            </table>
-        </div>
-    </main>
+            <div class="log-container bg-card rounded border border-subtle">
+                <table class="w-full log-table">
+                    <thead>
+                        <tr class="border-b border-subtle text-left text-zinc-500">
+                            <th class="px-3 py-2 font-normal">Timestamp</th>
+                            <th class="px-3 py-2 font-normal">Source IP</th>
+                            <th class="px-3 py-2 font-normal">Dest IP</th>
+                            <th class="px-3 py-2 font-normal">Protocol</th>
+                            <th class="px-3 py-2 font-normal">Action</th>
+                            <th class="px-3 py-2 font-normal">Threat</th>
+                            <th class="px-3 py-2 font-normal">Type</th>
+                            <th class="px-3 py-2 font-normal">Bytes</th>
+                            <th class="px-3 py-2 font-normal">Path</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logBody"></tbody>
+                </table>
+            </div>
+        </main>
 
-    <footer class="border-t border-dark-600 py-6 text-center text-gray-600 text-sm mt-12">
-        TheKavach - Synthetic Cybersecurity Telemetry Platform
-    </footer>
+        <footer class="border-t border-subtle py-6 text-center text-zinc-600 text-xs mt-12">
+            TheKavach - Synthetic Cybersecurity Telemetry Platform
+        </footer>
+    </div>
 
     <script>
         let evtSource = null;
@@ -107,7 +113,7 @@
                 evtSource = null;
                 btn.textContent = 'Start';
                 btn.classList.remove('bg-red-500', 'hover:bg-red-600');
-                btn.classList.add('bg-accent', 'hover:bg-accent-dim');
+                btn.classList.add('bg-accent');
             } else {
                 const threat = document.getElementById('threatFilter').value;
                 const interval = document.getElementById('intervalSelect').value;
@@ -119,8 +125,8 @@
                     addLogRow(log);
                 };
                 btn.textContent = 'Stop';
-                btn.classList.remove('bg-accent', 'hover:bg-accent-dim');
-                btn.classList.add('bg-red-500', 'hover:bg-red-600');
+                btn.classList.remove('bg-accent');
+                btn.classList.add('bg-red-500');
             }
         }
 
@@ -134,16 +140,16 @@
             document.getElementById('susCount').textContent = susCount;
             document.getElementById('benCount').textContent = benCount;
             const row = document.createElement('tr');
-            row.className = 'border-b border-dark-700 log-row';
-            row.innerHTML = '<td class="px-4 py-2 text-gray-500">' + log.timestamp + '</td>' +
-                '<td class="px-4 py-2 font-mono">' + log.source_ip + '</td>' +
-                '<td class="px-4 py-2 font-mono">' + log.dest_ip + '</td>' +
-                '<td class="px-4 py-2">' + log.protocol + '</td>' +
-                '<td class="px-4 py-2">' + log.action + '</td>' +
-                '<td class="px-4 py-2 threat-' + log.threat_label + '">' + log.threat_label + '</td>' +
-                '<td class="px-4 py-2">' + log.log_type + '</td>' +
-                '<td class="px-4 py-2 font-mono">' + log.bytes_transferred + '</td>' +
-                '<td class="px-4 py-2 text-gray-500">' + log.request_path + '</td>';
+            row.className = 'border-b border-subtle hover:bg-zinc-900/50 transition';
+            row.innerHTML = '<td class="px-3 py-1.5 text-zinc-500">' + log.timestamp + '</td>' +
+                '<td class="px-3 py-1.5 font-mono text-xs">' + log.source_ip + '</td>' +
+                '<td class="px-3 py-1.5 font-mono text-xs">' + log.dest_ip + '</td>' +
+                '<td class="px-3 py-1.5">' + log.protocol + '</td>' +
+                '<td class="px-3 py-1.5">' + log.action + '</td>' +
+                '<td class="px-3 py-1.5 threat-' + log.threat_label + '">' + log.threat_label + '</td>' +
+                '<td class="px-3 py-1.5">' + log.log_type + '</td>' +
+                '<td class="px-3 py-1.5 font-mono text-xs">' + log.bytes_transferred + '</td>' +
+                '<td class="px-3 py-1.5 text-zinc-500">' + log.request_path + '</td>';
             const tbody = document.getElementById('logBody');
             tbody.insertBefore(row, tbody.firstChild);
             if (tbody.children.length > 200) tbody.removeChild(tbody.lastChild);

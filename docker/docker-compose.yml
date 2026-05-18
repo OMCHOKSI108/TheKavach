@@ -4,11 +4,9 @@ services:
   thekavach:
     build:
       context: .
-      dockerfile: docker/Dockerfile
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
-    volumes:
-      - ./dataset:/app/dataset
     environment:
       - PYTHONUNBUFFERED=1
     restart: unless-stopped

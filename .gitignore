@@ -1,20 +1,38 @@
-.venv
-venv
+﻿# Python cache
 __pycache__/
 *.pyc
 *.pyo
-.DS_Store
+
+# Virtual environments
+.venv/
+venv/
+
+# IDE
 .idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs and temp
 *.log
 *.sqlite3
 *.env
-*.egg-info/
+*.bak
+*.tmp
+
+# Build artifacts
 dist/
 build/
 *.egg
-*.log
-*.bak
-*.tmp
-.csv
+*.egg-info/
 
-    
+# Large dataset files (use chunks instead)
+dataset/cybersecurity_threat_detection_logs.csv
+dataset/*.csv.bak
+
+# Docker
+.dockerignore

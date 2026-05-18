@@ -1,6 +1,5 @@
 ﻿from pydantic import BaseModel, Field
 from typing import Optional, List
-from datetime import datetime
 
 class KeyRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100, description="User name for API key generation")

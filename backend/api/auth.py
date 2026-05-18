@@ -1,10 +1,7 @@
 ﻿import uuid
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict
 from fastapi import Request, HTTPException
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-
-security = HTTPBearer()
 
 api_key_store: Dict[str, dict] = {}
 
@@ -18,8 +15,12 @@ def generate_api_key(name: str) -> str:
     return key
 
 async def api_key_middleware(request: Request, call_next):
-    public_paths = ["/health", "/generate-key", "/", "/docs", "/openapi.json", "/favicon.ico", "/viewer", "/api/health", "/api/generate-key", "/api/docs", "/api/openapi.json", "/api/stats"]
-    if request.url.path in public_paths or request.url.path.startswith("/api/health") or request.url.path.startswith("/api/generate-key"):
+    public_paths = [
+        "/", "/docs", "/viewer", "/favicon.ico",
+        "/api/health", "/api/generate-key", "/api/status",
+        "/openapi.json", "/api/openapi.json", "/api/docs"
+    ]
+    if request.url.path in public_paths:
         return await call_next(request)
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
