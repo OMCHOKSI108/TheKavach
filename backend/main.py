@@ -1,15 +1,15 @@
 ﻿from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os
 from .api.routes import router
+from .api.ai_routes import router as ai_router
 from .api.auth import api_key_middleware
 
 app = FastAPI(
-    title="TheKavach - Synthetic Cybersecurity Telemetry Platform",
-    description="Real-time cybersecurity log streaming API for ML training and research",
-    version="1.0.0",
+    title="TheKavach - AI Cybersecurity Threat Intelligence Platform",
+    description="Real-time cybersecurity log streaming + AI threat detection API",
+    version="2.0.0",
     contact={"name": "TheKavach Team"}
 )
 
@@ -23,6 +23,7 @@ app.add_middleware(
 
 app.middleware("http")(api_key_middleware)
 app.include_router(router, prefix="/api")
+app.include_router(ai_router, prefix="/api/ai")
 
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 frontend_dir = os.path.join(base_dir, "frontend")

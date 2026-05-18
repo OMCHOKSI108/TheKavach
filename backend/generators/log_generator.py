@@ -71,16 +71,4 @@ class LogGenerator:
     def generate_batch(self, count: int = 50) -> List[Dict[str, Any]]:
         return [self.generate_single_log() for _ in range(count)]
 
-    def generate_from_template(self, base_row: Dict[str, Any]) -> Dict[str, Any]:
-        new_row = base_row.copy()
-        new_row["id"] = str(uuid.uuid4())
-        new_row["timestamp"] = self._random_timestamp()
-        new_row["source_ip"] = self._random_ip()
-        new_row["dest_ip"] = self._random_ip()
-        new_row["protocol"] = random.choice(PROTOCOLS)
-        new_row["bytes_transferred"] = self._random_bytes()
-        new_row["threat_label"] = random.choices(THREAT_LABELS, weights=THREAT_WEIGHTS, k=1)[0]
-        new_row["action"] = "blocked" if new_row["threat_label"] == "malicious" else random.choice(ACTIONS)
-        return new_row
-
 log_generator = LogGenerator()

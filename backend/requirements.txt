@@ -3,3 +3,7 @@ uvicorn==0.34.0
 pandas==2.2.3
 pydantic==2.10.3
 python-multipart==0.0.20
+
+# AI dependencies (optional - installed only if AI analysis is needed)
+# transformers>=4.37.0
+# torch>=2.1.0

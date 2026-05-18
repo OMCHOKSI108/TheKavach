@@ -18,9 +18,12 @@ async def api_key_middleware(request: Request, call_next):
     public_paths = [
         "/", "/docs", "/viewer", "/favicon.ico",
         "/api/health", "/api/generate-key", "/api/status",
+        "/api/ai/status",
         "/openapi.json", "/api/openapi.json", "/api/docs"
     ]
     if request.url.path in public_paths:
+        return await call_next(request)
+    if request.url.path.startswith("/api/ai/"):
         return await call_next(request)
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):

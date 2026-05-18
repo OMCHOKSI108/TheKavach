@@ -66,7 +66,7 @@ async def health_check():
     uptime = datetime.now() - start_time
     return HealthResponse(
         status="healthy",
-        dataset_rows=len(data_loader.get_dataframe()) if data_loader.get_dataframe() is not None else 0,
+        dataset_rows=data_loader.get_total_rows(),
         uptime=str(uptime)
     )
 
@@ -78,7 +78,6 @@ async def get_status():
     hours = (total_seconds % 86400) // 3600
     minutes = (total_seconds % 3600) // 60
     seconds = total_seconds % 60
-    df = data_loader.get_dataframe()
     return {
         "status": "operational",
         "uptime": {
@@ -90,21 +89,20 @@ async def get_status():
             "formatted": f"{days}d {hours}h {minutes}m {seconds}s"
         },
         "dataset": {
-            "total_rows": len(df) if df is not None else 0,
-            "columns": list(df.columns) if df is not None else []
+            "total_rows": data_loader.get_total_rows(),
+            "columns": data_loader.get_columns()
         },
         "api_keys_generated": len(api_key_store),
-        "version": "1.0.0",
+        "version": "2.0.0",
         "started_at": start_time.isoformat(),
         "current_time": datetime.now().isoformat()
     }
 
 @router.get("/stats", tags=["System"])
 async def get_stats():
-    df = data_loader.get_dataframe()
     return {
         "total_keys_generated": len(api_key_store),
-        "dataset_columns": list(df.columns) if df is not None else [],
+        "dataset_columns": data_loader.get_columns(),
         "threat_distribution": data_loader.get_column_stats("threat_label"),
         "protocol_distribution": data_loader.get_column_stats("protocol"),
         "log_type_distribution": data_loader.get_column_stats("log_type")

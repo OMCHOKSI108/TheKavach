@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TheKavach - Cybersecurity Telemetry Platform</title>
+    <title>TheKavach - AI Cybersecurity Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -20,7 +20,6 @@
         .bg-accent { background: #22c55e; }
         .bg-accent:hover { background: #16a34a; }
         .bg-card { background: #111113; }
-        .bg-card:hover { background: #18181b; }
         .font-mono { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
         .key-display { word-break: break-all; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -28,6 +27,9 @@
         .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block; }
         .status-dot.live { animation: pulse 2s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .threat-malicious { color: #ef4444; }
+        .threat-suspicious { color: #eab308; }
+        .threat-benign { color: #22c55e; }
     </style>
 </head>
 <body class="min-h-screen flex">
@@ -39,7 +41,7 @@
             <div class="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
                 <div class="flex items-center gap-4">
                     <span class="text-accent text-lg font-semibold tracking-wide">THEKAVACH</span>
-                    <span class="text-[10px] bg-zinc-800 px-2 py-0.5 rounded text-zinc-500">v1.0</span>
+                    <span class="text-[10px] bg-zinc-800 px-2 py-0.5 rounded text-zinc-500">v2.0</span>
                 </div>
                 <div class="flex gap-6 text-sm">
                     <a href="/" class="text-accent">Home</a>
@@ -50,36 +52,34 @@
             </div>
         </nav>
 
-        <main class="max-w-5xl mx-auto px-6 py-16">
-            <section class="mb-20">
+        <main class="max-w-5xl mx-auto px-6 py-12">
+            <section class="mb-16">
                 <div class="flex items-center gap-2 mb-4">
                     <span class="status-dot live"></span>
                     <span class="text-xs text-muted" id="statusText">System operational</span>
                 </div>
-                <h1 class="text-4xl font-semibold mb-4 text-white">
-                    Synthetic Cybersecurity<br>Telemetry Streaming
+                <h1 class="text-4xl font-semibold mb-3 text-white">
+                    AI Cybersecurity<br>Threat Intelligence
                 </h1>
-                <p class="text-muted text-base max-w-xl mb-8 leading-relaxed">
-                    Real-time cybersecurity log streaming API for ML training, anomaly detection research, and threat modeling. Generate unlimited synthetic firewall, network, and application logs.
+                <p class="text-muted text-base max-w-xl mb-6 leading-relaxed">
+                    Stream synthetic cybersecurity logs and analyze them with AI. Powered by <code class="text-accent">OMCHOKSI108/CyberKavach</code> MiniLM model trained on 6M+ logs.
                 </p>
                 <div class="flex gap-3 text-xs">
-                    <span class="bg-zinc-900 px-3 py-1.5 rounded border border-subtle text-zinc-400">6M+ Dataset Rows</span>
+                    <span class="bg-zinc-900 px-3 py-1.5 rounded border border-subtle text-zinc-400">6M+ Dataset</span>
+                    <span class="bg-zinc-900 px-3 py-1.5 rounded border border-subtle text-zinc-400">MiniLM AI</span>
                     <span class="bg-zinc-900 px-3 py-1.5 rounded border border-subtle text-zinc-400">SSE Streaming</span>
-                    <span class="bg-zinc-900 px-3 py-1.5 rounded border border-subtle text-zinc-400">REST API</span>
+                    <span class="bg-zinc-900 px-3 py-1.5 rounded border border-subtle text-zinc-400">Explainable</span>
                 </div>
             </section>
 
-            <section class="mb-20">
-                <div class="bg-card rounded-lg border border-subtle p-6">
-                    <h2 class="text-base font-medium mb-4 text-white">Generate API Key</h2>
-                    <div class="flex gap-3 mb-4">
+            <section class="mb-16">
+                <div class="bg-card rounded-lg border border-subtle p-5">
+                    <h2 class="text-sm font-medium mb-3 text-white">Generate API Key</h2>
+                    <div class="flex gap-3 mb-3">
                         <input type="text" id="nameInput" placeholder="Enter your name"
-                            class="flex-1 bg-zinc-900 border border-subtle rounded px-4 py-2.5 text-sm text-white focus:outline-none focus:border-green-500 transition"
+                            class="flex-1 bg-zinc-900 border border-subtle rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500 transition"
                             onkeydown="if(event.key==='Enter') generateKey()">
-                        <button onclick="generateKey()"
-                            class="bg-accent text-black font-medium px-5 py-2.5 rounded text-sm transition">
-                            Generate
-                        </button>
+                        <button onclick="generateKey()" class="bg-accent text-black font-medium px-4 py-2 rounded text-sm transition">Generate</button>
                     </div>
                     <div id="keyResult" class="hidden fade-in">
                         <div class="bg-zinc-900 rounded border border-subtle p-3 flex justify-between items-start gap-3">
@@ -93,9 +93,61 @@
                 </div>
             </section>
 
-            <section class="mb-20">
-                <h2 class="text-base font-medium mb-4 text-white">API Endpoints</h2>
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <section class="mb-16">
+                <h2 class="text-sm font-medium mb-3 text-white">AI Log Analysis</h2>
+                <div class="bg-card rounded-lg border border-subtle p-5">
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+                        <div>
+                            <label class="text-xs text-muted block mb-1">Protocol</label>
+                            <select id="aiProtocol" class="w-full bg-zinc-900 border border-subtle rounded px-3 py-2 text-sm text-white">
+                                <option>TCP</option><option>UDP</option><option>HTTP</option><option>HTTPS</option><option>FTP</option><option>SSH</option><option>ICMP</option><option>DNS</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs text-muted block mb-1">Action</label>
+                            <select id="aiAction" class="w-full bg-zinc-900 border border-subtle rounded px-3 py-2 text-sm text-white">
+                                <option>blocked</option><option>allowed</option><option>denied</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs text-muted block mb-1">User Agent</label>
+                            <input type="text" id="aiUA" value="Nmap Scripting Engine" class="w-full bg-zinc-900 border border-subtle rounded px-3 py-2 text-sm text-white">
+                        </div>
+                        <div>
+                            <label class="text-xs text-muted block mb-1">Request Path</label>
+                            <input type="text" id="aiPath" value="/admin/config" class="w-full bg-zinc-900 border border-subtle rounded px-3 py-2 text-sm text-white">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 mb-3">
+                        <div>
+                            <label class="text-xs text-muted block mb-1">Bytes Transferred</label>
+                            <input type="number" id="aiBytes" value="45000" class="w-full bg-zinc-900 border border-subtle rounded px-3 py-2 text-sm text-white">
+                        </div>
+                        <div>
+                            <label class="text-xs text-muted block mb-1">Log Type</label>
+                            <select id="aiLogType" class="w-full bg-zinc-900 border border-subtle rounded px-3 py-2 text-sm text-white">
+                                <option>firewall</option><option>ids</option><option>application</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button onclick="analyzeLog()" class="bg-accent text-black font-medium px-4 py-2 rounded text-sm transition w-full">Analyze with AI</button>
+                    <div id="aiResult" class="hidden fade-in mt-3 bg-zinc-900 rounded border border-subtle p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <span id="aiThreat" class="text-lg font-semibold"></span>
+                                <span id="aiConfidence" class="text-xs text-muted ml-2"></span>
+                            </div>
+                            <span id="aiSeverity" class="text-xs px-2 py-1 rounded border"></span>
+                        </div>
+                        <div id="aiExplanation" class="text-xs text-muted space-y-1"></div>
+                        <div id="aiScores" class="mt-2 text-xs font-mono text-zinc-500"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="mb-16">
+                <h2 class="text-sm font-medium mb-3 text-white">API Endpoints</h2>
+                <div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
                     <div class="bg-card rounded border border-subtle p-4">
                         <span class="text-green-400 text-[10px] font-mono">POST</span>
                         <code class="block text-sm text-white mt-1 font-mono">/api/generate-key</code>
@@ -112,65 +164,81 @@
                         <p class="text-muted text-xs mt-1">SSE real-time stream</p>
                     </div>
                     <div class="bg-card rounded border border-subtle p-4">
+                        <span class="text-orange-400 text-[10px] font-mono">POST</span>
+                        <code class="block text-sm text-white mt-1 font-mono">/api/ai/analyze</code>
+                        <p class="text-muted text-xs mt-1">AI threat analysis</p>
+                    </div>
+                    <div class="bg-card rounded border border-subtle p-4">
+                        <span class="text-orange-400 text-[10px] font-mono">POST</span>
+                        <code class="block text-sm text-white mt-1 font-mono">/api/ai/analyze-batch</code>
+                        <p class="text-muted text-xs mt-1">Batch AI analysis</p>
+                    </div>
+                    <div class="bg-card rounded border border-subtle p-4">
                         <span class="text-yellow-400 text-[10px] font-mono">GET</span>
                         <code class="block text-sm text-white mt-1 font-mono">/api/status</code>
-                        <p class="text-muted text-xs mt-1">Uptime & metrics</p>
+                        <p class="text-muted text-xs mt-1">Uptime and metrics</p>
                     </div>
                 </div>
             </section>
 
-            <section class="mb-20">
-                <h2 class="text-base font-medium mb-4 text-white">Quick Start</h2>
+            <section class="mb-16">
+                <h2 class="text-sm font-medium mb-3 text-white">Quick Start</h2>
                 <div class="bg-card rounded border border-subtle p-5">
-                    <pre class="text-xs text-zinc-400 overflow-x-auto leading-relaxed"><code># Generate API key
+                    <pre class="text-xs text-zinc-400 overflow-x-auto leading-relaxed"><code># 1. Generate API key
 curl -X POST http://localhost:8000/api/generate-key \
   -H "Content-Type: application/json" \
   -d '{"name": "Your Name"}'
 
-# Fetch logs
+# 2. Fetch logs
 curl http://localhost:8000/api/logs?count=100 \
   -H "Authorization: Bearer tk_your_key"
 
-# Stream logs
+# 3. AI analyze a log
+curl -X POST http://localhost:8000/api/ai/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"protocol":"TCP","action":"blocked","user_agent":"Nmap Scripting Engine","request_path":"/admin/config","bytes_transferred":45000,"log_type":"firewall"}'
+
+# 4. Stream logs
 curl http://localhost:8000/api/stream?interval=0.5 \
   -H "Authorization: Bearer tk_your_key"
 
-# Python example
+# 5. Python AI analysis
 import requests
-response = requests.get("http://localhost:8000/api/logs",
-    headers={"Authorization": "Bearer tk_your_key"},
-    params={"count": 100, "threat_label": "malicious"})
-logs = response.json()</code></pre>
+response = requests.post("http://localhost:8000/api/ai/analyze",
+    json={"protocol":"TCP","action":"blocked","user_agent":"Nmap",
+          "request_path":"/admin/config","bytes_transferred":45000,"log_type":"firewall"})
+result = response.json()
+print(f"Threat: {result['threat']}, Severity: {result['severity']}")</code></pre>
+                </div>
+            </section>
+
+            <section class="mb-16">
+                <h2 class="text-sm font-medium mb-3 text-white">System Status</h2>
+                <div class="bg-card rounded border border-subtle p-5">
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm" id="statusGrid">
+                        <div><span class="text-muted text-xs">Status</span><p class="text-accent font-medium" id="sysStatus">Checking...</p></div>
+                        <div><span class="text-muted text-xs">Uptime</span><p class="text-white font-mono text-xs" id="sysUptime">-</p></div>
+                        <div><span class="text-muted text-xs">Dataset Rows</span><p class="text-white font-mono text-xs" id="sysRows">-</p></div>
+                        <div><span class="text-muted text-xs">AI Model</span><p class="text-white font-mono text-xs" id="sysAI">Checking...</p></div>
+                    </div>
                 </div>
             </section>
 
             <section>
-                <h2 class="text-base font-medium mb-4 text-white">System Status</h2>
+                <h2 class="text-sm font-medium mb-3 text-white">AI Architecture</h2>
                 <div class="bg-card rounded border border-subtle p-5">
-                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm" id="statusGrid">
-                        <div>
-                            <span class="text-muted text-xs">Status</span>
-                            <p class="text-accent font-medium" id="sysStatus">Checking...</p>
-                        </div>
-                        <div>
-                            <span class="text-muted text-xs">Uptime</span>
-                            <p class="text-white font-mono text-xs" id="sysUptime">-</p>
-                        </div>
-                        <div>
-                            <span class="text-muted text-xs">Dataset Rows</span>
-                            <p class="text-white font-mono text-xs" id="sysRows">-</p>
-                        </div>
-                        <div>
-                            <span class="text-muted text-xs">API Keys</span>
-                            <p class="text-white font-mono text-xs" id="sysKeys">-</p>
-                        </div>
-                    </div>
+                    <pre class="text-xs text-zinc-400 leading-relaxed">Raw Logs -> LogNormalizer -> Canonical semantic text
+    -> MiniLM (OMCHOKSI108/CyberKavach) -> Semantic embeddings
+    -> Threat Classification -> benign/suspicious/malicious
+    -> Severity Engine -> Critical/High/Medium/Low
+    -> Explainability -> SHAP + rule-based reasons
+    -> Inference API -> FastAPI endpoint</pre>
                 </div>
             </section>
         </main>
 
         <footer class="border-t border-subtle py-6 text-center text-zinc-600 text-xs">
-            TheKavach - Synthetic Cybersecurity Telemetry Platform
+            TheKavach - AI Cybersecurity Threat Intelligence Platform
         </footer>
     </div>
 
@@ -201,11 +269,49 @@ logs = response.json()</code></pre>
         }
 
         function copyKey() {
-            const key = document.getElementById('apiKey').textContent;
-            navigator.clipboard.writeText(key);
+            navigator.clipboard.writeText(document.getElementById('apiKey').textContent);
             const btn = event.target;
             btn.textContent = 'Copied';
             setTimeout(() => btn.textContent = 'Copy', 1500);
+        }
+
+        async function analyzeLog() {
+            const btn = event.target;
+            btn.textContent = 'Analyzing...';
+            btn.disabled = true;
+            try {
+                const res = await fetch('/api/ai/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        protocol: document.getElementById('aiProtocol').value,
+                        action: document.getElementById('aiAction').value,
+                        user_agent: document.getElementById('aiUA').value,
+                        request_path: document.getElementById('aiPath').value,
+                        bytes_transferred: parseInt(document.getElementById('aiBytes').value),
+                        log_type: document.getElementById('aiLogType').value
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Analysis failed');
+                const threatClass = data.threat === 'malicious' ? 'threat-malicious' : data.threat === 'suspicious' ? 'threat-suspicious' : 'threat-benign';
+                document.getElementById('aiThreat').className = 'text-lg font-semibold ' + threatClass;
+                document.getElementById('aiThreat').textContent = data.threat.toUpperCase();
+                document.getElementById('aiConfidence').textContent = data.confidence_pct;
+                document.getElementById('aiSeverity').textContent = data.severity;
+                const sevColor = data.severity === 'Critical' || data.severity === 'High' ? 'border-red-500 text-red-400' : data.severity === 'Medium' ? 'border-yellow-500 text-yellow-400' : 'border-green-500 text-green-400';
+                document.getElementById('aiSeverity').className = 'text-xs px-2 py-1 rounded border ' + sevColor;
+                document.getElementById('aiExplanation').innerHTML = data.explanation.map(e => '<div>- ' + e + '</div>').join('');
+                document.getElementById('aiScores').textContent = Object.entries(data.all_scores).map(([k,v]) => k + ': ' + (v*100).toFixed(1) + '%').join(' | ');
+                document.getElementById('aiResult').classList.remove('hidden');
+            } catch (e) {
+                document.getElementById('aiResult').classList.remove('hidden');
+                document.getElementById('aiThreat').textContent = 'ERROR';
+                document.getElementById('aiThreat').className = 'text-lg font-semibold threat-malicious';
+                document.getElementById('aiExplanation').innerHTML = '<div>' + e.message + '</div>';
+            }
+            btn.textContent = 'Analyze with AI';
+            btn.disabled = false;
         }
 
         async function updateStatus() {
@@ -215,11 +321,23 @@ logs = response.json()</code></pre>
                 document.getElementById('sysStatus').textContent = data.status;
                 document.getElementById('sysUptime').textContent = data.uptime.formatted;
                 document.getElementById('sysRows').textContent = data.dataset.total_rows.toLocaleString();
-                document.getElementById('sysKeys').textContent = data.api_keys_generated;
                 document.getElementById('statusText').textContent = 'System operational - ' + data.uptime.formatted + ' uptime';
             } catch (e) {
                 document.getElementById('sysStatus').textContent = 'offline';
                 document.getElementById('sysStatus').className = 'text-red-500 font-medium';
+            }
+            try {
+                const aiRes = await fetch('/api/ai/status');
+                const aiData = await aiRes.json();
+                if (aiData.available) {
+                    document.getElementById('sysAI').textContent = 'CyberKavach';
+                    document.getElementById('sysAI').className = 'text-accent font-mono text-xs';
+                } else {
+                    document.getElementById('sysAI').textContent = 'Not trained yet';
+                    document.getElementById('sysAI').className = 'text-muted font-mono text-xs';
+                }
+            } catch (e) {
+                document.getElementById('sysAI').textContent = 'N/A';
             }
         }
 

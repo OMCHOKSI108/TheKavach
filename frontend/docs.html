@@ -24,7 +24,6 @@
         .tab-btn.active { color: #22c55e; border-bottom-color: #22c55e; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        pre { white-space: pre-wrap; word-wrap: break-word; }
     </style>
 </head>
 <body class="min-h-screen flex">
@@ -49,7 +48,7 @@
             <section class="mb-10">
                 <h2 class="text-base font-medium text-white mb-3">Base URL</h2>
                 <code class="bg-card px-3 py-2 rounded border border-subtle text-sm font-mono text-zinc-400">https://your-app.onrender.com/api</code>
-                <p class="text-muted text-xs mt-2">Local development: <code class="text-zinc-500">http://localhost:8000/api</code></p>
+                <p class="text-muted text-xs mt-2">Local: <code class="text-zinc-500">http://localhost:8000/api</code></p>
             </section>
 
             <section class="mb-10">
@@ -60,8 +59,6 @@
 
             <section class="mb-10">
                 <h2 class="text-base font-medium text-white mb-3">POST /api/generate-key</h2>
-                <p class="text-muted text-sm mb-3">Generate a new API key.</p>
-
                 <div class="mb-3">
                     <div class="flex gap-0 border-b border-subtle">
                         <button class="tab-btn active" onclick="switchTab(this, 'gk-curl')">cURL</button>
@@ -76,71 +73,59 @@
                     </div>
                     <div id="gk-python" class="tab-content">
                         <pre class="bg-card p-3 rounded border border-t-0 border-subtle text-xs font-mono text-zinc-400"><code>import requests
-
 response = requests.post(
     "http://localhost:8000/api/generate-key",
     json={"name": "John Doe"}
 )
 data = response.json()
-api_key = data["api_key"]
-print(f"Your API key: {api_key}")</code></pre>
+print(f"API key: {data['api_key']}")</code></pre>
                     </div>
                     <div id="gk-node" class="tab-content">
-                        <pre class="bg-card p-3 rounded border border-t-0 border-subtle text-xs font-mono text-zinc-400"><code>const response = await fetch("http://localhost:8000/api/generate-key", {
+                        <pre class="bg-card p-3 rounded border border-t-0 border-subtle text-xs font-mono text-zinc-400"><code>const res = await fetch("http://localhost:8000/api/generate-key", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name: "John Doe" })
 });
-const data = await response.json();
-console.log("Your API key:", data.api_key);</code></pre>
+const data = await res.json();
+console.log("API key:", data.api_key);</code></pre>
                     </div>
                     <div id="gk-cpp" class="tab-content">
                         <pre class="bg-card p-3 rounded border border-t-0 border-subtle text-xs font-mono text-zinc-400"><code>#include &lt;iostream&gt;
 #include &lt;curl/curl.h&gt;
 
-size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* output) {
-    output->append((char*)contents, size * nmemb);
+size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* out) {
+    out->append((char*)contents, size * nmemb);
     return size * nmemb;
 }
 
 int main() {
     CURL* curl = curl_easy_init();
     std::string response;
-    const char* json = R"({"name": "John Doe"})";
-
     curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:8000/api/generate-key");
-    curl_easy_setopt(curl, CURLOPT_POST, 1L);
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json);
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, R"({"name":"John Doe"})");
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
-
     struct curl_slist* headers = NULL;
     headers = curl_slist_append(headers, "Content-Type: application/json");
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-
-    CURLcode res = curl_easy_perform(curl);
-    if (res == CURLE_OK) std::cout << response << std::endl;
-
+    curl_easy_perform(curl);
+    std::cout << response << std::endl;
     curl_easy_cleanup(curl);
-    curl_slist_free_all(headers);
     return 0;
 }</code></pre>
                     </div>
                 </div>
-
-                <h3 class="text-xs font-medium text-zinc-500 mb-2">Sample Response</h3>
+                <h3 class="text-xs font-medium text-zinc-500 mb-2">Response</h3>
                 <pre class="bg-card p-3 rounded border border-subtle text-xs font-mono text-zinc-400"><code>{
-  "api_key": "tk_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6",
+  "api_key": "tk_a1b2c3d4e5f6...",
   "name": "John Doe",
-  "created_at": "2026-05-19T00:30:00.123456",
-  "message": "API key generated successfully. Use it in the Authorization header as: Bearer &lt;your-key&gt;"
+  "created_at": "2026-05-19T00:30:00",
+  "message": "API key generated successfully."
 }</code></pre>
             </section>
 
             <section class="mb-10">
                 <h2 class="text-base font-medium text-white mb-3">GET /api/logs</h2>
-                <p class="text-muted text-sm mb-3">Fetch synthetic cybersecurity logs. Supports filtering.</p>
-
                 <div class="mb-3">
                     <div class="flex gap-0 border-b border-subtle">
                         <button class="tab-btn active" onclick="switchTab(this, 'gl-curl')">cURL</button>
@@ -149,87 +134,55 @@ int main() {
                         <button class="tab-btn" onclick="switchTab(this, 'gl-cpp')">C++</button>
                     </div>
                     <div id="gl-curl" class="tab-content active">
-                        <pre class="bg-card p-3 rounded border border-t-0 border-subtle text-xs font-mono text-zinc-400"><code># Fetch 100 logs
-curl "http://localhost:8000/api/logs?count=100" \
-  -H "Authorization: Bearer tk_your_key"
-
-# Filter by threat label
-curl "http://localhost:8000/api/logs?count=50&threat_label=malicious" \
-  -H "Authorization: Bearer tk_your_key"
-
-# Filter by protocol
-curl "http://localhost:8000/api/logs?count=50&protocol=TCP" \
+                        <pre class="bg-card p-3 rounded border border-t-0 border-subtle text-xs font-mono text-zinc-400"><code>curl "http://localhost:8000/api/logs?count=100&threat_label=malicious" \
   -H "Authorization: Bearer tk_your_key"</code></pre>
                     </div>
                     <div id="gl-python" class="tab-content">
                         <pre class="bg-card p-3 rounded border border-t-0 border-subtle text-xs font-mono text-zinc-400"><code>import requests
-
-API_KEY = "tk_your_key"
-
-# Fetch logs
 response = requests.get(
     "http://localhost:8000/api/logs",
-    headers={"Authorization": f"Bearer {API_KEY}"},
+    headers={"Authorization": "Bearer tk_your_key"},
     params={"count": 100, "threat_label": "malicious"}
 )
 logs = response.json()
-print(f"Received {logs['count']} logs")
-
 for log in logs["logs"]:
-    print(f"[{log['threat_label']}] {log['source_ip']} -> {log['dest_ip']} ({log['protocol']})")</code></pre>
+    print(f"[{log['threat_label']}] {log['source_ip']} -> {log['dest_ip']}")</code></pre>
                     </div>
                     <div id="gl-node" class="tab-content">
-                        <pre class="bg-card p-3 rounded border border-t-0 border-subtle text-xs font-mono text-zinc-400"><code>const API_KEY = "tk_your_key";
-
-// Fetch logs
-const response = await fetch(
+                        <pre class="bg-card p-3 rounded border border-t-0 border-subtle text-xs font-mono text-zinc-400"><code>const res = await fetch(
     "http://localhost:8000/api/logs?count=100&threat_label=malicious",
-    { headers: { "Authorization": Bearer  } }
+    { headers: { "Authorization": "Bearer tk_your_key" } }
 );
-const data = await response.json();
-console.log(Received  logs);
-
-data.logs.forEach(log => {
-    console.log([]  -> );
-});
-
-// Save to file for ML training
-const fs = require("fs");
-fs.writeFileSync("logs.json", JSON.stringify(data.logs, null, 2));</code></pre>
+const data = await res.json();
+data.logs.forEach(l => console.log([] ));</code></pre>
                     </div>
                     <div id="gl-cpp" class="tab-content">
                         <pre class="bg-card p-3 rounded border border-t-0 border-subtle text-xs font-mono text-zinc-400"><code>#include &lt;iostream&gt;
 #include &lt;curl/curl.h&gt;
 
-size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* output) {
-    output->append((char*)contents, size * nmemb);
+size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* out) {
+    out->append((char*)contents, size * nmemb);
     return size * nmemb;
 }
 
 int main() {
     CURL* curl = curl_easy_init();
     std::string response;
-
     curl_easy_setopt(curl, CURLOPT_URL,
         "http://localhost:8000/api/logs?count=50&threat_label=malicious");
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
-
     struct curl_slist* headers = NULL;
     headers = curl_slist_append(headers, "Authorization: Bearer tk_your_key");
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-
-    CURLcode res = curl_easy_perform(curl);
-    if (res == CURLE_OK) std::cout << response << std::endl;
-
+    curl_easy_perform(curl);
+    std::cout << response << std::endl;
     curl_easy_cleanup(curl);
-    curl_slist_free_all(headers);
     return 0;
 }</code></pre>
                     </div>
                 </div>
-
-                <h3 class="text-xs font-medium text-zinc-500 mb-2">Sample Response</h3>
+                <h3 class="text-xs font-medium text-zinc-500 mb-2">Response</h3>
                 <pre class="bg-card p-3 rounded border border-subtle text-xs font-mono text-zinc-400"><code>{
   "count": 2,
   "logs": [
@@ -245,19 +198,6 @@ int main() {
       "bytes_transferred": 45123,
       "user_agent": "Nmap Scripting Engine",
       "request_path": "/admin/config"
-    },
-    {
-      "id": "b3cf7fb3-b1d1-4d90-8442-fbde408a0928",
-      "timestamp": "2026-05-18T23:40:34",
-      "source_ip": "10.0.0.42",
-      "dest_ip": "172.16.0.100",
-      "protocol": "HTTPS",
-      "action": "allowed",
-      "threat_label": "suspicious",
-      "log_type": "application",
-      "bytes_transferred": 23417,
-      "user_agent": "curl/7.64.1",
-      "request_path": "/api/login"
     }
   ]
 }</code></pre>
@@ -265,8 +205,6 @@ int main() {
 
             <section class="mb-10">
                 <h2 class="text-base font-medium text-white mb-3">GET /api/stream</h2>
-                <p class="text-muted text-sm mb-3">Server-Sent Events (SSE) for real-time log streaming.</p>
-
                 <div class="mb-3">
                     <div class="flex gap-0 border-b border-subtle">
                         <button class="tab-btn active" onclick="switchTab(this, 'gs-curl')">cURL</button>
@@ -274,77 +212,118 @@ int main() {
                         <button class="tab-btn" onclick="switchTab(this, 'gs-node')">Node.js</button>
                     </div>
                     <div id="gs-curl" class="tab-content active">
-                        <pre class="bg-card p-3 rounded border border-t-0 border-subtle text-xs font-mono text-zinc-400"><code># Stream logs at 0.5s interval
-curl -N "http://localhost:8000/api/stream?interval=0.5" \
-  -H "Authorization: Bearer tk_your_key"
-
-# Stream only malicious logs
-curl -N "http://localhost:8000/api/stream?interval=1&threat_label=malicious" \
+                        <pre class="bg-card p-3 rounded border border-t-0 border-subtle text-xs font-mono text-zinc-400"><code>curl -N "http://localhost:8000/api/stream?interval=0.5" \
   -H "Authorization: Bearer tk_your_key"</code></pre>
                     </div>
                     <div id="gs-python" class="tab-content">
-                        <pre class="bg-card p-3 rounded border border-t-0 border-subtle text-xs font-mono text-zinc-400"><code>import requests
-import json
-
-API_KEY = "tk_your_key"
-
+                        <pre class="bg-card p-3 rounded border border-t-0 border-subtle text-xs font-mono text-zinc-400"><code>import requests, json
 response = requests.get(
     "http://localhost:8000/api/stream?interval=0.5",
-    headers={"Authorization": f"Bearer {API_KEY}"},
+    headers={"Authorization": "Bearer tk_your_key"},
     stream=True
 )
-
 for line in response.iter_lines():
-    if line:
-        line = line.decode("utf-8")
-        if line.startswith("data: "):
-            log = json.loads(line[6:])
-            print(f"[{log['threat_label']}] {log['source_ip']} -> {log['dest_ip']}")</code></pre>
+    if line and line.decode().startswith("data: "):
+        log = json.loads(line.decode()[6:])
+        print(f"[{log['threat_label']}] {log['source_ip']}")</code></pre>
                     </div>
                     <div id="gs-node" class="tab-content">
                         <pre class="bg-card p-3 rounded border border-t-0 border-subtle text-xs font-mono text-zinc-400"><code>const EventSource = require("eventsource");
-
-const evtSource = new EventSource(
+const evt = new EventSource(
     "http://localhost:8000/api/stream?interval=0.5",
     { headers: { "Authorization": "Bearer tk_your_key" } }
 );
-
-evtSource.onmessage = (event) => {
-    const log = JSON.parse(event.data);
-    console.log([]  -> );
-};
-
-evtSource.onerror = (err) => {
-    console.error("Stream error:", err);
-    evtSource.close();
+evt.onmessage = (e) => {
+    const log = JSON.parse(e.data);
+    console.log([] );
 };</code></pre>
                     </div>
                 </div>
             </section>
 
             <section class="mb-10">
+                <h2 class="text-base font-medium text-white mb-3">POST /api/ai/analyze</h2>
+                <p class="text-muted text-sm mb-3">AI-powered threat analysis using <code class="text-accent">OMCHOKSI108/CyberKavach</code> MiniLM model.</p>
+                <div class="mb-3">
+                    <div class="flex gap-0 border-b border-subtle">
+                        <button class="tab-btn active" onclick="switchTab(this, 'ga-curl')">cURL</button>
+                        <button class="tab-btn" onclick="switchTab(this, 'ga-python')">Python</button>
+                        <button class="tab-btn" onclick="switchTab(this, 'ga-node')">Node.js</button>
+                    </div>
+                    <div id="ga-curl" class="tab-content active">
+                        <pre class="bg-card p-3 rounded border border-t-0 border-subtle text-xs font-mono text-zinc-400"><code>curl -X POST http://localhost:8000/api/ai/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "protocol": "TCP",
+    "action": "blocked",
+    "user_agent": "Nmap Scripting Engine",
+    "request_path": "/admin/config",
+    "bytes_transferred": 45000,
+    "log_type": "firewall"
+  }'</code></pre>
+                    </div>
+                    <div id="ga-python" class="tab-content">
+                        <pre class="bg-card p-3 rounded border border-t-0 border-subtle text-xs font-mono text-zinc-400"><code>import requests
+response = requests.post(
+    "http://localhost:8000/api/ai/analyze",
+    json={
+        "protocol": "TCP",
+        "action": "blocked",
+        "user_agent": "Nmap Scripting Engine",
+        "request_path": "/admin/config",
+        "bytes_transferred": 45000,
+        "log_type": "firewall"
+    }
+)
+result = response.json()
+print(f"Threat: {result['threat']}")
+print(f"Confidence: {result['confidence_pct']}")
+print(f"Severity: {result['severity']}")
+print(f"Why: {result['explanation']}")</code></pre>
+                    </div>
+                    <div id="ga-node" class="tab-content">
+                        <pre class="bg-card p-3 rounded border border-t-0 border-subtle text-xs font-mono text-zinc-400"><code>const res = await fetch("http://localhost:8000/api/ai/analyze", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+        protocol: "TCP",
+        action: "blocked",
+        user_agent: "Nmap Scripting Engine",
+        request_path: "/admin/config",
+        bytes_transferred: 45000,
+        log_type: "firewall"
+    })
+});
+const result = await res.json();
+console.log(Threat:  | Severity: );
+console.log(Why: );</code></pre>
+                    </div>
+                </div>
+                <h3 class="text-xs font-medium text-zinc-500 mb-2">Response</h3>
+                <pre class="bg-card p-3 rounded border border-subtle text-xs font-mono text-zinc-400"><code>{
+  "threat": "malicious",
+  "confidence": 0.9652,
+  "confidence_pct": "96.5%",
+  "severity": "Critical",
+  "all_scores": { "benign": 0.012, "suspicious": 0.023, "malicious": 0.965 },
+  "explanation": [
+    "Nmap scanner detected",
+    "Request blocked/denied by security controls",
+    "Targeting high-risk path (admin/config/backup)"
+  ],
+  "raw_log": { "protocol": "TCP", "action": "blocked", ... }
+}</code></pre>
+            </section>
+
+            <section class="mb-10">
                 <h2 class="text-base font-medium text-white mb-3">GET /api/status</h2>
-                <p class="text-muted text-sm mb-3">System uptime and platform metrics.</p>
-                <pre class="bg-card p-3 rounded border border-subtle text-xs font-mono text-zinc-400"><code>curl http://localhost:8000/api/status</code></pre>
-                <h3 class="text-xs font-medium text-zinc-500 mb-2 mt-3">Sample Response</h3>
+                <p class="text-muted text-sm mb-3">System uptime and metrics.</p>
                 <pre class="bg-card p-3 rounded border border-subtle text-xs font-mono text-zinc-400"><code>{
   "status": "operational",
-  "uptime": {
-    "raw": "0:02:34.567890",
-    "days": 0,
-    "hours": 0,
-    "minutes": 2,
-    "seconds": 34,
-    "formatted": "0d 0h 2m 34s"
-  },
-  "dataset": {
-    "total_rows": 6000000,
-    "columns": ["timestamp", "source_ip", "dest_ip", ...]
-  },
+  "uptime": { "formatted": "0d 2h 34m 56s" },
+  "dataset": { "total_rows": 6000000 },
   "api_keys_generated": 42,
-  "version": "1.0.0",
-  "started_at": "2026-05-19T00:00:00",
-  "current_time": "2026-05-19T00:02:34"
+  "version": "2.0.0"
 }</code></pre>
             </section>
 
@@ -362,42 +341,24 @@ evtSource.onerror = (err) => {
                 </table>
             </section>
 
-            <section class="mb-10">
-                <h2 class="text-base font-medium text-white mb-3">Threat Labels</h2>
-                <div class="grid grid-cols-3 gap-3">
-                    <div class="bg-card p-3 rounded border border-subtle border-l-2 border-l-green-500">
-                        <span class="text-green-500 text-sm font-medium">benign</span>
-                        <p class="text-xs text-muted mt-0.5">Normal traffic (70%)</p>
-                    </div>
-                    <div class="bg-card p-3 rounded border border-subtle border-l-2 border-l-yellow-500">
-                        <span class="text-yellow-500 text-sm font-medium">suspicious</span>
-                        <p class="text-xs text-muted mt-0.5">Anomalous traffic (20%)</p>
-                    </div>
-                    <div class="bg-card p-3 rounded border border-subtle border-l-2 border-l-red-500">
-                        <span class="text-red-500 text-sm font-medium">malicious</span>
-                        <p class="text-xs text-muted mt-0.5">Threat traffic (10%)</p>
-                    </div>
-                </div>
-            </section>
-
             <section>
                 <h2 class="text-base font-medium text-white mb-3">Error Responses</h2>
                 <pre class="bg-card p-3 rounded border border-subtle text-xs font-mono text-zinc-400"><code>// 401 - Missing or invalid API key
-{ "detail": "Missing API key. Use: Authorization: Bearer &lt;your-key&gt;" }
+{ "detail": "Missing API key. Use: Authorization: Bearer <your-key>" }
 
-// 422 - Invalid parameters
-{ "detail": [{ "loc": ["query", "count"], "msg": "ensure this value is greater than 1" }] }</code></pre>
+// 503 - AI model not trained yet
+{ "detail": "AI model not loaded. Train model and push to HuggingFace as OMCHOKSI108/CyberKavach" }</code></pre>
             </section>
         </main>
 
         <footer class="border-t border-subtle py-6 text-center text-zinc-600 text-xs">
-            TheKavach - Synthetic Cybersecurity Telemetry Platform
+            TheKavach - AI Cybersecurity Threat Intelligence Platform
         </footer>
     </div>
 
     <script>
         function switchTab(btn, tabId) {
-            const parent = btn.closest('section') || btn.closest('div').parentElement;
+            const parent = btn.parentElement.parentElement;
             parent.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             btn.classList.add('active');

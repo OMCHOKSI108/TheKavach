@@ -1,7 +1,8 @@
-﻿# Python cache
+﻿# Python
 __pycache__/
 *.pyc
 *.pyo
+*.egg-info/
 
 # Virtual environments
 .venv/
@@ -24,15 +25,21 @@ Thumbs.db
 *.bak
 *.tmp
 
-# Build artifacts
+# Build
 dist/
 build/
 *.egg
-*.egg-info/
 
-# Large dataset files (use chunks instead)
+# Large dataset (use chunks instead)
 dataset/cybersecurity_threat_detection_logs.csv
-dataset/*.csv.bak
 
-# Docker
-.dockerignore
+# Model artifacts (too large for git)
+models/cyber-threat-model/
+models/*.onnx
+models/*.pkl
+models/*.bin
+models/*.safetensors
+models/*.msgpack
+models/train_data.csv
+models/test_data.csv
+models/*.png
