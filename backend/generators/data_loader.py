@@ -71,7 +71,7 @@ class DataLoader:
 
     def get_unique_values(self, column: str) -> list:
         values = set()
-        for i in range(len(self.chunk_files)):
+        for i in range(min(4, len(self.chunk_files))):
             self._ensure_chunk_loaded(i)
             pos = self.loaded_indices.index(i)
             values.update(self.loaded_dfs[pos][column].dropna().unique().tolist())
@@ -84,7 +84,7 @@ class DataLoader:
 
     def get_column_stats(self, column: str) -> dict:
         all_values = []
-        for i in range(len(self.chunk_files)):
+        for i in range(min(4, len(self.chunk_files))):
             self._ensure_chunk_loaded(i)
             pos = self.loaded_indices.index(i)
             all_values.extend(self.loaded_dfs[pos][column].dropna().tolist())
