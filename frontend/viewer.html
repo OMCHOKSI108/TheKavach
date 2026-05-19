@@ -27,6 +27,13 @@
         .threat-benign { color: #22c55e; }
         .threat-suspicious { color: #eab308; }
         .threat-malicious { color: #ef4444; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .status-dot.connected { background: #22c55e; animation: pulse 2s infinite; }
+        .status-dot.disconnected { background: #ef4444; }
+        .status-dot.connecting { background: #eab308; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+        .log-new { animation: slideIn 0.2s ease-out; }
     </style>
 </head>
 <body class="min-h-screen flex">
@@ -47,7 +54,11 @@
 
         <main class="max-w-7xl mx-auto px-6 py-8">
             <div class="flex justify-between items-center mb-4">
-                <h1 class="text-lg font-medium text-white">Live Log Stream</h1>
+                <div class="flex items-center gap-3">
+                    <h1 class="text-lg font-medium text-white">Live Log Stream</h1>
+                    <span class="status-dot disconnected" id="statusDot"></span>
+                    <span class="text-xs text-muted" id="statusText">Disconnected</span>
+                </div>
                 <div class="flex gap-2 items-center">
                     <select id="threatFilter" class="bg-zinc-900 border border-subtle rounded px-3 py-1.5 text-xs text-zinc-300">
                         <option value="">All Threats</option>
@@ -94,40 +105,86 @@
                     </thead>
                     <tbody id="logBody"></tbody>
                 </table>
+                <div id="emptyState" class="text-center py-20 text-muted">
+                    <p class="text-lg mb-2">No logs yet</p>
+                    <p class="text-sm">Click Start to begin streaming live cybersecurity logs</p>
+                </div>
             </div>
         </main>
 
         <footer class="border-t border-subtle py-6 text-center text-zinc-600 text-xs mt-12">
-            TheKavach - Synthetic Cybersecurity Telemetry Platform
+            TheKavach - AI Cybersecurity Threat Intelligence Platform
         </footer>
     </div>
 
     <script>
         let evtSource = null;
         let logCount = 0, malCount = 0, susCount = 0, benCount = 0;
+        let reconnectTimer = null;
+
+        function setStatus(state, text) {
+            const dot = document.getElementById('statusDot');
+            const label = document.getElementById('statusText');
+            dot.className = 'status-dot ' + state;
+            label.textContent = text;
+        }
 
         function toggleStream() {
             const btn = document.getElementById('toggleBtn');
             if (evtSource) {
                 evtSource.close();
                 evtSource = null;
+                if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
                 btn.textContent = 'Start';
-                btn.classList.remove('bg-red-500', 'hover:bg-red-600');
+                btn.classList.remove('bg-red-500');
                 btn.classList.add('bg-accent');
+                setStatus('disconnected', 'Disconnected');
             } else {
-                const threat = document.getElementById('threatFilter').value;
-                const interval = document.getElementById('intervalSelect').value;
-                let url = '/api/stream?interval=' + interval;
-                if (threat) url += '&threat_label=' + threat;
-                evtSource = new EventSource(url);
-                evtSource.onmessage = (e) => {
+                connect();
+            }
+        }
+
+        function connect() {
+            const btn = document.getElementById('toggleBtn');
+            const threat = document.getElementById('threatFilter').value;
+            const interval = document.getElementById('intervalSelect').value;
+            let url = '/api/stream?interval=' + interval;
+            if (threat) url += '&threat_label=' + threat;
+
+            setStatus('connecting', 'Connecting...');
+            btn.textContent = 'Stop';
+            btn.classList.remove('bg-accent');
+            btn.classList.add('bg-red-500');
+
+            evtSource = new EventSource(url);
+
+            evtSource.onopen = function() {
+                setStatus('connected', 'Streaming live');
+            };
+
+            evtSource.onmessage = function(e) {
+                try {
                     const log = JSON.parse(e.data);
                     addLogRow(log);
-                };
-                btn.textContent = 'Stop';
-                btn.classList.remove('bg-accent');
-                btn.classList.add('bg-red-500');
-            }
+                    document.getElementById('emptyState').style.display = 'none';
+                } catch(err) {
+                    console.error('Parse error:', err);
+                }
+            };
+
+            evtSource.onerror = function(err) {
+                console.error('Stream error:', err);
+                setStatus('disconnected', 'Connection lost');
+                evtSource.close();
+                evtSource = null;
+                btn.textContent = 'Start';
+                btn.classList.remove('bg-red-500');
+                btn.classList.add('bg-accent');
+
+                reconnectTimer = setTimeout(function() {
+                    if (!evtSource) connect();
+                }, 3000);
+            };
         }
 
         function addLogRow(log) {
@@ -139,8 +196,9 @@
             document.getElementById('malCount').textContent = malCount;
             document.getElementById('susCount').textContent = susCount;
             document.getElementById('benCount').textContent = benCount;
+
             const row = document.createElement('tr');
-            row.className = 'border-b border-subtle hover:bg-zinc-900/50 transition';
+            row.className = 'border-b border-subtle hover:bg-zinc-900/50 transition log-new';
             row.innerHTML = '<td class="px-3 py-1.5 text-zinc-500">' + log.timestamp + '</td>' +
                 '<td class="px-3 py-1.5 font-mono text-xs">' + log.source_ip + '</td>' +
                 '<td class="px-3 py-1.5 font-mono text-xs">' + log.dest_ip + '</td>' +
@@ -150,13 +208,15 @@
                 '<td class="px-3 py-1.5">' + log.log_type + '</td>' +
                 '<td class="px-3 py-1.5 font-mono text-xs">' + log.bytes_transferred + '</td>' +
                 '<td class="px-3 py-1.5 text-zinc-500">' + log.request_path + '</td>';
+
             const tbody = document.getElementById('logBody');
             tbody.insertBefore(row, tbody.firstChild);
-            if (tbody.children.length > 200) tbody.removeChild(tbody.lastChild);
+            if (tbody.children.length > 500) tbody.removeChild(tbody.lastChild);
         }
 
         function clearLogs() {
             document.getElementById('logBody').innerHTML = '';
+            document.getElementById('emptyState').style.display = 'block';
             logCount = malCount = susCount = benCount = 0;
             document.getElementById('logCount').textContent = '0';
             document.getElementById('malCount').textContent = '0';

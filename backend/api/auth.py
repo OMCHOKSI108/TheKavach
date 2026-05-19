@@ -21,6 +21,8 @@ async def api_key_middleware(request: Request, call_next):
         "/api/health",
         "/api/generate-key",
         "/api/status",
+        "/api/stream",
+        "/api/logs",
         "/api/ai/",
         "/api/docs",
         "/api/openapi.json",
