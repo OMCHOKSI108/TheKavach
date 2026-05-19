@@ -4,6 +4,8 @@
 
 [![Open in Kaggle](https://kaggle.com/static/images/open-in-kaggle.svg)](https://www.kaggle.com/code/omchoksi04/thekavach)
 
+![TheKavach Model Accuracy](docs/metrics.png)
+
 TheKavach is a synthetic cybersecurity telemetry streaming platform that generates real-time network security logs and analyzes them using AI. Instead of providing static CSV datasets, it operates as a live data service where developers and ML engineers obtain API keys and consume continuously generated firewall, network, and application logs. The platform transforms a 6-million-row dataset into a dynamic simulation environment mirroring how modern SOCs and SIEM systems operate.
 
 | Feature | Detail |
