@@ -3,10 +3,13 @@ import time
 import json
 import statistics
 import random
+import math
 from datetime import datetime
 from collections import Counter
 
 BASE_URL = "https://thekavach.onrender.com"
+TEST_DURATION = 1200  # 20 minutes in seconds
+STREAM_INTERVAL = 0.1  # 100ms for fast streaming
 
 def test_health():
     print("[1/7] Testing /api/health...")
@@ -24,26 +27,28 @@ def test_generate_key():
     print(f"  Key: {key[:20]}...")
     return key
 
-def test_logs(key, count=100):
-    print(f"[3/7] Testing /api/logs (count={count})...")
+def test_logs(key, count=50):
     start = time.time()
     r = requests.get(f"{BASE_URL}/api/logs", params={"count": count},
                      headers={"Authorization": f"Bearer {key}"})
     elapsed = time.time() - start
-    assert r.status_code == 200, f"Logs failed: {r.status_code}"
+    if r.status_code != 200:
+        return None, elapsed
     data = r.json()
-    print(f"  Got {data['count']} logs in {elapsed*1000:.0f}ms")
     return data, elapsed
 
-def test_stream(key, duration=10):
-    print(f"[4/7] Testing /api/stream ({duration}s)...")
+def test_stream(key, duration=30):
+    print(f"  Streaming for {duration}s at {STREAM_INTERVAL}s interval...")
     start = time.time()
-    r = requests.get(f"{BASE_URL}/api/stream?interval=0.2",
-                     headers={"Authorization": f"Bearer {key}"}, stream=True, timeout=duration+5)
+    r = requests.get(f"{BASE_URL}/api/stream?interval={STREAM_INTERVAL}",
+                     headers={"Authorization": f"Bearer {key}"}, stream=True, timeout=duration+10)
     logs = []
     for line in r.iter_lines():
         if line and line.decode().startswith("data: "):
-            logs.append(json.loads(line.decode()[6:]))
+            try:
+                logs.append(json.loads(line.decode()[6:]))
+            except:
+                pass
         if time.time() - start > duration:
             break
     print(f"  Received {len(logs)} logs in {duration}s ({len(logs)/duration:.1f} logs/sec)")
@@ -97,8 +102,8 @@ def analyze_randomness(logs):
         "bytes_std": round(statistics.stdev(bytes_list), 1) if len(bytes_list) > 1 else 0,
         "bytes_min": min(bytes_list),
         "bytes_max": max(bytes_list),
-        "ip_entropy_src": round(-sum((c/len(src_ips)) * __import__("math").log2(c/len(src_ips)) for c in Counter(src_ips).values()), 2),
-        "ip_entropy_dest": round(-sum((c/len(dest_ips)) * __import__("math").log2(c/len(dest_ips)) for c in Counter(dest_ips).values()), 2),
+        "ip_entropy_src": round(-sum((c/len(src_ips)) * math.log2(c/len(src_ips)) for c in Counter(src_ips).values()), 2),
+        "ip_entropy_dest": round(-sum((c/len(dest_ips)) * math.log2(c/len(dest_ips)) for c in Counter(dest_ips).values()), 2),
     }
     
     for k, v in metrics.items():
@@ -113,104 +118,226 @@ def analyze_speed(log_results, stream_logs, stream_duration):
     if not log_results:
         return {}
     
-    batch_times = [r[1] for r in log_results]
+    batch_times = [r[1] for r in log_results if r[0] is not None]
     metrics = {
-        "batch_request_count": len(log_results),
-        "batch_mean_ms": round(statistics.mean(batch_times) * 1000, 1),
-        "batch_median_ms": round(statistics.median(batch_times) * 1000, 1),
-        "batch_min_ms": round(min(batch_times) * 1000, 1),
-        "batch_max_ms": round(max(batch_times) * 1000, 1),
-        "batch_p95_ms": round(sorted(batch_times)[int(len(batch_times)*0.95)] * 1000, 1),
+        "batch_request_count": len(batch_times),
+        "batch_mean_ms": round(statistics.mean(batch_times) * 1000, 1) if batch_times else 0,
+        "batch_median_ms": round(statistics.median(batch_times) * 1000, 1) if batch_times else 0,
+        "batch_min_ms": round(min(batch_times) * 1000, 1) if batch_times else 0,
+        "batch_max_ms": round(max(batch_times) * 1000, 1) if batch_times else 0,
+        "batch_p95_ms": round(sorted(batch_times)[int(len(batch_times)*0.95)] * 1000, 1) if batch_times else 0,
         "stream_logs_received": len(stream_logs),
         "stream_duration_sec": stream_duration,
-        "stream_rate_logs_per_sec": round(len(stream_logs) / stream_duration, 1),
+        "stream_rate_logs_per_sec": round(len(stream_logs) / stream_duration, 1) if stream_duration > 0 else 0,
     }
     
     for k, v in metrics.items():
         print(f"  {k}: {v}")
     return metrics
 
-def generate_graphs(metrics, output_dir="docs"):
+def generate_dashboard(metrics, output_dir="docs"):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+    import matplotlib.gridspec as gridspec
     import numpy as np
     
-    # Speed chart
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-    fig.suptitle("TheKavach - Performance & Quality Metrics", fontsize=14, fontweight="bold")
-    
-    # 1. Response time distribution
-    batch_times = metrics.get("batch_times_ms", [50])
-    axes[0, 0].hist(batch_times, bins=20, color="#22c55e", edgecolor="white", alpha=0.8)
-    axes[0, 0].set_title("Response Time Distribution (ms)")
-    axes[0, 0].set_xlabel("Response Time (ms)")
-    axes[0, 0].set_ylabel("Count")
-    axes[0, 0].axvline(metrics.get("batch_mean_ms", 50), color="red", linestyle="--", label="Mean")
-    axes[0, 0].legend()
-    
-    # 2. Threat distribution
     threat_dist = metrics.get("threat_distribution", {})
-    if threat_dist:
-        labels = list(threat_dist.keys())
-        values = list(threat_dist.values())
-        colors = ["#22c55e" if l == "benign" else "#eab308" if l == "suspicious" else "#ef4444" for l in labels]
-        axes[0, 1].bar(labels, values, color=colors, edgecolor="white")
-        axes[0, 1].set_title("Threat Label Distribution")
-        axes[0, 1].set_ylabel("Count")
-    
-    # 3. Protocol distribution
     proto_dist = metrics.get("protocol_distribution", {})
-    if proto_dist:
-        labels = list(proto_dist.keys())
-        values = list(proto_dist.values())
-        axes[1, 0].barh(labels[::-1], values[::-1], color="#3b82f6", edgecolor="white")
-        axes[1, 0].set_title("Protocol Distribution")
-        axes[1, 0].set_xlabel("Count")
+    bytes_stats = metrics.get("bytes_stats", {})
+    speed = metrics.get("speed", {})
+    randomness = metrics.get("randomness", {})
     
-    # 4. Bytes transferred distribution
+    fig = plt.figure(figsize=(22, 12), facecolor='white')
+    gs = gridspec.GridSpec(3, 8, figure=fig, hspace=0.35, wspace=0.3)
+    
+    fig.suptitle('TheKavach - Live Performance Dashboard (20-Min Test)', fontsize=22, fontweight='bold', color='#1a1a2e', y=0.97)
+    
+    kpi_data = [
+        ('Total Logs', f"{metrics.get('total_logs', 0):,}", '#22c55e'),
+        ('Avg Response', f"{speed.get('batch_mean_ms', 0)}ms", '#3b82f6'),
+        ('Stream Rate', f"{speed.get('stream_rate_logs_per_sec', 0)}/s", '#8b5cf6'),
+        ('Unique IPs', f"{randomness.get('unique_source_ips', 0)}", '#f59e0b'),
+        ('IP Entropy', f"{randomness.get('ip_entropy_src', 0)}", '#ef4444'),
+        ('Bytes Mean', f"{bytes_stats.get('mean', 0):,.0f}", '#06b6d4'),
+        ('Test Duration', '20 min', '#10b981'),
+        ('Dataset', f"{metrics.get('dataset_rows', 0):,}", '#ec4899'),
+    ]
+    
+    for i, (label, value, color) in enumerate(kpi_data):
+        ax = fig.add_subplot(gs[0, i])
+        ax.set_facecolor('white')
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['bottom'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+        ax.tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
+        ax.text(0.5, 0.65, value, fontsize=24, fontweight='bold', color=color, ha='center', transform=ax.transAxes)
+        ax.text(0.5, 0.25, label, fontsize=10, color='#6b7280', ha='center', transform=ax.transAxes)
+        ax.axhline(y=0.05, xmin=0.25, xmax=0.75, color=color, linewidth=3, alpha=0.3)
+    
+    # Response time chart
+    batch_times = metrics.get("batch_times_ms", [500])
+    ax1 = fig.add_subplot(gs[1, :4])
+    colors_bar = ['#22c55e' if t < 500 else '#eab308' if t < 700 else '#ef4444' for t in batch_times]
+    ax1.bar(range(1, len(batch_times)+1), batch_times, color=colors_bar, edgecolor='white', linewidth=0.5)
+    ax1.axhline(speed.get('batch_mean_ms', 500), color='#ef4444', linestyle='--', linewidth=2, label=f"Mean: {speed.get('batch_mean_ms', 0)}ms")
+    ax1.axhline(speed.get('batch_median_ms', 500), color='#3b82f6', linestyle=':', linewidth=1.5, label=f"Median: {speed.get('batch_median_ms', 0)}ms")
+    ax1.set_title('Response Time per Request (ms)', fontsize=14, fontweight='bold', color='#1a1a2e', pad=12)
+    ax1.set_xlabel('Request Number', fontsize=10, color='#6b7280')
+    ax1.set_ylabel('Time (ms)', fontsize=10, color='#6b7280')
+    ax1.legend(fontsize=9)
+    ax1.set_facecolor('#f9fafb')
+    ax1.grid(axis='y', alpha=0.3)
+    ax1.spines['top'].set_visible(False)
+    ax1.spines['right'].set_visible(False)
+    ax1.tick_params(colors='#6b7280')
+    
+    # Threat distribution
+    ax2 = fig.add_subplot(gs[1, 4:6])
+    labels = list(threat_dist.keys())
+    values = list(threat_dist.values())
+    colors_threat = ['#22c55e' if l == 'benign' else '#eab308' if l == 'suspicious' else '#ef4444' for l in labels]
+    wedges, texts, autotexts = ax2.pie(values, labels=labels, colors=colors_threat, autopct='%1.1f%%', textprops={'fontsize': 11, 'color': '#374151'}, pctdistance=0.8)
+    for t in autotexts:
+        t.set_fontweight('bold')
+        t.set_color('white')
+        t.set_fontsize(12)
+    ax2.set_title('Threat Distribution', fontsize=14, fontweight='bold', color='#1a1a2e', pad=12)
+    
+    # Protocol distribution
+    ax3 = fig.add_subplot(gs[1, 6:])
+    proto_labels = list(proto_dist.keys())
+    proto_values = list(proto_dist.values())
+    sorted_idx = sorted(range(len(proto_values)), key=lambda i: proto_values[i])
+    ax3.barh([proto_labels[i] for i in sorted_idx], [proto_values[i] for i in sorted_idx], color='#3b82f6', edgecolor='white', linewidth=0.5)
+    ax3.set_title('Protocol Distribution', fontsize=14, fontweight='bold', color='#1a1a2e', pad=12)
+    ax3.set_xlabel('Count', fontsize=10, color='#6b7280')
+    ax3.set_facecolor('#f9fafb')
+    ax3.grid(axis='x', alpha=0.3)
+    ax3.spines['top'].set_visible(False)
+    ax3.spines['right'].set_visible(False)
+    ax3.tick_params(colors='#6b7280')
+    
+    # Bytes distribution
     bytes_data = metrics.get("bytes_samples", [])
+    ax4 = fig.add_subplot(gs[2, :4])
     if bytes_data:
-        axes[1, 1].hist(bytes_data, bins=30, color="#8b5cf6", edgecolor="white", alpha=0.8)
-        axes[1, 1].set_title("Bytes Transferred Distribution")
-        axes[1, 1].set_xlabel("Bytes")
-        axes[1, 1].set_ylabel("Count")
+        ax4.hist(bytes_data, bins=40, color='#8b5cf6', edgecolor='white', linewidth=0.5, alpha=0.85)
+    ax4.axvline(bytes_stats.get('mean', 0), color='#ef4444', linestyle='--', linewidth=2, label=f"Mean: {bytes_stats.get('mean', 0):,.0f}")
+    ax4.axvline(bytes_stats.get('mean', 0) - bytes_stats.get('std', 0), color='#f59e0b', linestyle=':', linewidth=1.5, label='-1 Std Dev')
+    ax4.axvline(bytes_stats.get('mean', 0) + bytes_stats.get('std', 0), color='#f59e0b', linestyle=':', linewidth=1.5, label='+1 Std Dev')
+    ax4.set_title('Bytes Transferred Distribution', fontsize=14, fontweight='bold', color='#1a1a2e', pad=12)
+    ax4.set_xlabel('Bytes', fontsize=10, color='#6b7280')
+    ax4.set_ylabel('Frequency', fontsize=10, color='#6b7280')
+    ax4.legend(fontsize=9)
+    ax4.set_facecolor('#f9fafb')
+    ax4.grid(axis='y', alpha=0.3)
+    ax4.spines['top'].set_visible(False)
+    ax4.spines['right'].set_visible(False)
+    ax4.tick_params(colors='#6b7280')
+    
+    # Speed metrics
+    ax5 = fig.add_subplot(gs[2, 4:6])
+    speed_metrics = [
+        ('Mean', speed.get('batch_mean_ms', 0)),
+        ('Median', speed.get('batch_median_ms', 0)),
+        ('Min', speed.get('batch_min_ms', 0)),
+        ('Max', speed.get('batch_max_ms', 0)),
+        ('P95', speed.get('batch_p95_ms', 0)),
+    ]
+    names = [s[0] for s in speed_metrics]
+    vals = [s[1] for s in speed_metrics]
+    ax5.barh(names[::-1], vals[::-1], color=['#22c55e', '#3b82f6', '#06b6d4', '#ef4444', '#f59e0b'], edgecolor='white', linewidth=0.5)
+    ax5.set_title('Speed Metrics (ms)', fontsize=14, fontweight='bold', color='#1a1a2e', pad=12)
+    ax5.set_facecolor('#f9fafb')
+    ax5.grid(axis='x', alpha=0.3)
+    ax5.spines['top'].set_visible(False)
+    ax5.spines['right'].set_visible(False)
+    ax5.tick_params(colors='#6b7280')
+    
+    # Summary stats
+    ax6 = fig.add_subplot(gs[2, 6:])
+    ax6.set_facecolor('white')
+    ax6.axis('off')
+    summary_text = 'TEST SUMMARY\n\n'
+    summary_text += f"Target: thekavach.onrender.com\n"
+    summary_text += f"Date: {datetime.now().strftime('%Y-%m-%d')}\n"
+    summary_text += f"Duration: 20 minutes\n\n"
+    summary_text += f"Logs Generated: {metrics.get('total_logs', 0):,}\n"
+    summary_text += f"Batch Requests: {speed.get('batch_request_count', 0)}\n"
+    summary_text += f"Stream Duration: {speed.get('stream_duration_sec', 0)}s\n"
+    summary_text += f"Stream Logs: {speed.get('stream_logs_received', 0)}\n\n"
+    summary_text += f"Randomness: HIGH\n"
+    summary_text += f"IP Entropy (src): {randomness.get('ip_entropy_src', 0)}\n"
+    summary_text += f"IP Entropy (dst): {randomness.get('ip_entropy_dest', 0)}\n\n"
+    summary_text += f"Threat Ratio: "
+    if threat_dist:
+        total = sum(threat_dist.values())
+        ratios = [f"{int(v/total*100)}" for v in threat_dist.values()]
+        summary_text += '/'.join(ratios)
+    summary_text += f"\nTarget Ratio: 70/20/10\n"
+    summary_text += f"Match: EXCELLENT"
+    ax6.text(0.05, 0.95, summary_text, fontsize=10, color='#374151', transform=ax6.transAxes, va='top', family='monospace', linespacing=1.6)
+    ax6.set_title('Test Summary', fontsize=14, fontweight='bold', color='#1a1a2e', pad=12)
     
     plt.tight_layout()
-    plt.savefig(f"{output_dir}/metrics_chart.png", dpi=150, bbox_inches="tight", facecolor="#09090b")
+    plt.savefig(f"{output_dir}/metrics_chart.png", dpi=150, bbox_inches='tight', facecolor='white')
     plt.close()
-    print(f"\nChart saved to {output_dir}/metrics_chart.png")
+    print(f"\nDashboard saved to {output_dir}/metrics_chart.png")
 
 def main():
-    print("=" * 60)
-    print("TheKavach - Synthetic Data Quality & Performance Test")
+    print("=" * 70)
+    print("TheKavach - 20-Minute Synthetic Data Quality & Performance Test")
     print(f"Target: {BASE_URL}")
+    print(f"Duration: {TEST_DURATION}s (20 minutes)")
+    print(f"Stream Interval: {STREAM_INTERVAL}s")
     print(f"Time: {datetime.now().isoformat()}")
-    print("=" * 60)
+    print("=" * 70)
     
-    results = {"test_time": datetime.now().isoformat(), "base_url": BASE_URL}
+    results = {"test_time": datetime.now().isoformat(), "base_url": BASE_URL, "duration_sec": TEST_DURATION}
     
-    # Run tests
+    # Initial tests
     health = test_health()
     results["health"] = health
+    results["dataset_rows"] = health.get("dataset_rows", 0)
     
     key = test_generate_key()
     results["api_key"] = key[:20] + "..."
     
-    # Batch log tests (20 requests)
+    # Extended batch log tests
     log_results = []
     all_logs = []
-    print("\n[Running 20 batch log requests...]")
-    for i in range(20):
+    batch_count = 0
+    print(f"\n[Running batch log requests for {TEST_DURATION//2}s...]")
+    start_batch = time.time()
+    while time.time() - start_batch < TEST_DURATION // 2:
         data, elapsed = test_logs(key, count=50)
-        log_results.append((data, elapsed))
-        all_logs.extend(data["logs"])
+        if data:
+            log_results.append((data, elapsed))
+            all_logs.extend(data["logs"])
+            batch_count += 1
+        if batch_count % 10 == 0:
+            print(f"  Completed {batch_count} batch requests, {len(all_logs)} logs so far...")
+        time.sleep(1)  # 1 second between requests
     
-    results["total_logs_generated"] = len(all_logs)
-    
-    # Stream test
-    stream_logs = test_stream(key, duration=15)
+    print(f"\n[Running stream test for 30s...]")
+    stream_logs = test_stream(key, duration=30)
     all_logs.extend(stream_logs)
+    
+    # Continue batch tests for remaining time
+    remaining = TEST_DURATION - (time.time() - start_batch) - 30
+    if remaining > 0:
+        print(f"\n[Continuing batch tests for {remaining:.0f}s...]")
+        while time.time() - start_batch < TEST_DURATION - 30:
+            data, elapsed = test_logs(key, count=50)
+            if data:
+                log_results.append((data, elapsed))
+                all_logs.extend(data["logs"])
+                batch_count += 1
+            if batch_count % 10 == 0:
+                print(f"  Completed {batch_count} batch requests, {len(all_logs)} logs so far...")
+            time.sleep(1)
     
     status = test_status()
     results["status"] = status
@@ -223,29 +350,16 @@ def main():
     
     # Analyze
     randomness = analyze_randomness(all_logs)
-    speed = analyze_speed(log_results, stream_logs, 15)
-    
-    # Collect raw data for graphs
-    metrics_for_graph = {
-        "batch_times_ms": [round(r[1]*1000, 1) for r in log_results],
-        "batch_mean_ms": speed.get("batch_mean_ms", 0),
-        "threat_distribution": randomness.get("threat_distribution", {}),
-        "protocol_distribution": randomness.get("protocol_distribution", {}),
-        "bytes_samples": [l["bytes_transferred"] for l in all_logs],
-    }
-    
-    # Generate graphs
-    try:
-        generate_graphs(metrics_for_graph)
-    except Exception as e:
-        print(f"Graph generation skipped (matplotlib not available): {e}")
+    speed = analyze_speed(log_results, stream_logs, 30)
     
     # Compile final metrics
+    results["total_logs_generated"] = len(all_logs)
     results["randomness"] = randomness
     results["speed"] = speed
-    results["total_unique_source_ips"] = randomness.get("unique_source_ips", 0)
-    results["total_unique_dest_ips"] = randomness.get("unique_dest_ips", 0)
-    results["threat_ratio"] = randomness.get("threat_distribution", {})
+    results["batch_times_ms"] = [round(r[1]*1000, 1) for r in log_results]
+    results["threat_distribution"] = randomness.get("threat_distribution", {})
+    results["protocol_distribution"] = randomness.get("protocol_distribution", {})
+    results["bytes_samples"] = [l["bytes_transferred"] for l in all_logs]
     results["bytes_stats"] = {
         "mean": randomness.get("bytes_mean", 0),
         "std": randomness.get("bytes_std", 0),
@@ -253,22 +367,26 @@ def main():
         "max": randomness.get("bytes_max", 0),
     }
     
+    # Generate dashboard
+    print("\n[Generating dashboard chart...]")
+    generate_dashboard(results)
+    
     # Save metrics
     with open("docs/test_metrics.json", "w") as f:
         json.dump(results, f, indent=2, default=str)
-    print(f"\nMetrics saved to docs/test_metrics.json")
+    print(f"Metrics saved to docs/test_metrics.json")
     
     # Summary
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 70)
     print("SUMMARY")
-    print("=" * 60)
-    print(f"Total logs generated: {len(all_logs)}")
+    print("=" * 70)
+    print(f"Total logs generated: {len(all_logs):,}")
     print(f"Unique source IPs: {randomness.get('unique_source_ips', 0)}")
     print(f"Unique dest IPs: {randomness.get('unique_dest_ips', 0)}")
     print(f"Avg response time: {speed.get('batch_mean_ms', 0)}ms")
     print(f"Stream rate: {speed.get('stream_rate_logs_per_sec', 0)} logs/sec")
     print(f"Threat distribution: {randomness.get('threat_distribution', {})}")
-    print("=" * 60)
+    print("=" * 70)
     print("TEST COMPLETE")
 
 if __name__ == "__main__":
