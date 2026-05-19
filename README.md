@@ -3,8 +3,7 @@
 ![TheKavach Web Interface](docs/thekavach_web.png)
 
 [![Open in Kaggle](https://kaggle.com/static/images/open-in-kaggle.svg)](https://www.kaggle.com/code/omchoksi04/thekavach)
-
-![TheKavach Model Accuracy](docs/metrics.png)
+[![Model on HuggingFace](https://img.shields.io/badge/%F0%9F%A4%97-Model-ff6d00)](https://huggingface.co/OMCHOKSI108/TheKavach)
 
 TheKavach is a synthetic cybersecurity telemetry streaming platform that generates real-time network security logs and analyzes them using AI. Instead of providing static CSV datasets, it operates as a live data service where developers and ML engineers obtain API keys and consume continuously generated firewall, network, and application logs. The platform transforms a 6-million-row dataset into a dynamic simulation environment mirroring how modern SOCs and SIEM systems operate.
 
@@ -23,7 +22,7 @@ TheKavach is a synthetic cybersecurity telemetry streaming platform that generat
 ```
 Raw Logs → LogNormalizer → Semantic Text → MiniLM → Threat Class → Severity → API
                                                         ↓
-                                                benign/suspicious/malicious
+                                                 benign/suspicious/malicious
 ```
 
 The platform has three core layers:
@@ -59,13 +58,141 @@ TheKavach/
 │   ├── app.py                  # HuggingFace Space (Gradio interface)
 │   └── requirements.txt        # AI dependencies
 ├── notebooks/
-│   └── 01_cybersecurity_threat_intelligence.ipynb  # 10-step training guide
+│   └── thekavach.ipynb         # Complete training notebook
 ├── dataset/
 │   └── chunks/                 # 30 x 25MB CSV files (Git-compatible)
+├── docs/
+│   ├── model_eval_chart.png    # AI model evaluation dashboard
+│   ├── metrics_chart.png       # Platform performance dashboard
+│   └── test_metrics.json       # Raw performance test data
+├── eval_model.py               # 20-minute AI model evaluation script
+├── test.py                     # 20-minute platform performance test
 ├── Dockerfile                  # Optimized container (4 chunks only)
 ├── render.yaml                 # Render deployment blueprint
 └── README.md
 ```
+
+## AI Model on HuggingFace
+
+The trained model is hosted at **[OMCHOKSI108/TheKavach](https://huggingface.co/OMCHOKSI108/TheKavach)**.
+
+### Model Files
+
+| File | Size | Purpose |
+|------|------|---------|
+| `model.safetensors` | 90.9 MB | Fine-tuned MiniLM weights |
+| `config.json` | - | Model configuration |
+| `tokenizer.json` | - | Text tokenizer |
+| `tokenizer_config.json` | - | Tokenizer settings |
+| `training_args.bin` | 5.2 KB | Training hyperparameters |
+| `threat_classifier.pkl` | 10.5 KB | Sklearn threat classifier |
+| `struct_scaler.pkl` | 951 B | Feature scaler |
+
+### How to Use the Model
+
+#### 1. Python (Direct Inference)
+
+```python
+from transformers import pipeline
+
+# Load model from HuggingFace
+classifier = pipeline(
+    "text-classification",
+    model="OMCHOKSI108/TheKavach",
+    tokenizer="OMCHOKSI108/TheKavach"
+)
+
+# Analyze a normalized log entry
+text = "Blocked TCP connection detected by firewall log using nmap scanner targeting high-risk path with small data transfer."
+result = classifier(text)
+print(result)
+# [{'label': 'LABEL_1', 'score': 0.9993}]
+# LABEL_0 = benign, LABEL_1 = suspicious, LABEL_2 = malicious
+```
+
+#### 2. Using TheKavach Inference Engine
+
+```python
+from models.inference import CybersecurityAI, LogNormalizer
+
+# Initialize with HuggingFace model
+ai = CybersecurityAI(hf_model="OMCHOKSI108/TheKavach")
+
+# Analyze a raw log entry (auto-normalizes)
+raw_log = {
+    "protocol": "TCP",
+    "action": "blocked",
+    "user_agent": "nmap scripting engine",
+    "request_path": "/admin/config",
+    "bytes_transferred": 5000,
+    "log_type": "firewall"
+}
+result = ai.analyze_log(raw_log)
+print(result)
+# {
+#   "threat": "suspicious",
+#   "confidence": 0.9993,
+#   "confidence_pct": "99.9%",
+#   "severity": "Medium",
+#   "all_scores": {"benign": 0.0, "suspicious": 0.9993, "malicious": 0.0},
+#   "explanation": ["Nmap scanner detected", "Request blocked/denied", "Targeting high-risk path"]
+# }
+```
+
+#### 3. Via REST API (Deployed Instance)
+
+```bash
+curl -X POST https://thekavach.onrender.com/api/ai/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "protocol": "TCP",
+    "action": "blocked",
+    "user_agent": "nmap scripting engine",
+    "request_path": "/admin/config",
+    "bytes_transferred": 5000,
+    "log_type": "firewall"
+  }'
+```
+
+#### 4. Batch Analysis (up to 100 logs)
+
+```bash
+curl -X POST https://thekavach.onrender.com/api/ai/analyze-batch \
+  -H "Content-Type: application/json" \
+  -d '{
+    "logs": [
+      {"protocol": "TCP", "action": "blocked", "user_agent": "nmap", "request_path": "/admin", "bytes_transferred": 5000, "log_type": "firewall"},
+      {"protocol": "HTTP", "action": "allowed", "user_agent": "Chrome", "request_path": "/index.html", "bytes_transferred": 1200, "log_type": "application"}
+    ]
+  }'
+```
+
+### Normalization Examples
+
+The model expects semantic text, not raw structured data. The `LogNormalizer` converts raw logs:
+
+| Raw Log Fields | Normalized Text |
+|----------------|-----------------|
+| TCP, blocked, Nmap, /admin/config | Blocked TCP connection detected by firewall log using nmap scanner targeting high-risk path |
+| HTTP, allowed, Chrome, /login | Permitted HTTP request recorded by application log accessing authentication path |
+| HTTPS, blocked, SQLMap, /api/login | Blocked HTTPS request detected by IDS using sqlmap scanner targeting authentication path |
+
+### Threat Classification
+
+| Label | Meaning | Distribution |
+|-------|---------|--------------|
+| benign | Normal network traffic | ~70% |
+| suspicious | Anomalous but not confirmed | ~20% |
+| malicious | Confirmed threat behavior | ~10% |
+
+### Severity Scoring
+
+| Confidence | Malicious | Suspicious | Benign |
+|------------|-----------|------------|--------|
+| > 95% | Critical | High | Low |
+| > 85% | High | Medium | Low |
+| > 70% | Medium | Medium | Informational |
+| < 70% | Informational | Informational | Informational |
 
 ## API Endpoints
 
@@ -133,85 +260,99 @@ curl "http://localhost:8000/api/logs?count=50&threat_label=malicious" \
   -H "Authorization: Bearer tk_your_key"
 ```
 
-### AI Analysis
+## AI Model Evaluation (20-Min Test)
 
-```bash
-curl -X POST http://localhost:8000/api/ai/analyze \
-  -H "Content-Type: application/json" \
-  -d '{
-    "protocol": "TCP",
-    "action": "blocked",
-    "user_agent": "Nmap Scripting Engine",
-    "request_path": "/admin/config",
-    "bytes_transferred": 45000,
-    "log_type": "firewall"
-  }'
-```
+Evaluated `OMCHOKSI108/TheKavach` on 19,511 synthetically generated logs over 20 minutes.
 
-### AI Response Format
+![AI Model Evaluation](docs/model_eval_chart.png)
 
-```json
-{
-  "threat": "malicious",
-  "confidence": 0.9652,
-  "confidence_pct": "96.5%",
-  "severity": "Critical",
-  "all_scores": { "benign": 0.012, "suspicious": 0.023, "malicious": 0.965 },
-  "explanation": [
-    "Nmap scanner detected",
-    "Request blocked/denied by security controls",
-    "Targeting high-risk path (admin/config/backup)"
-  ]
-}
-```
+### Overall Metrics
 
-## AI Threat Intelligence
+| Metric | Value |
+|--------|-------|
+| Total Logs Analyzed | 19,511 |
+| Accuracy | 79.8% |
+| Macro Precision | 0.520 |
+| Macro Recall | 0.502 |
+| Macro F1-Score | 0.499 |
+| Throughput | 16.3 logs/sec |
+| Avg Response Time | 11.1 ms |
+| P95 Response Time | 25.1 ms |
 
-The AI pipeline converts raw structured logs into semantic text, then classifies them using a fine-tuned MiniLM transformer.
+### Per-Class Performance
 
-### Normalization Examples
+| Class | Precision | Recall | F1-Score | Support |
+|-------|-----------|--------|----------|---------|
+| benign | 0.805 | 1.000 | 0.892 | 13,575 |
+| suspicious | 0.754 | 0.505 | 0.605 | 3,949 |
+| malicious | 0.000 | 0.000 | 0.000 | 1,987 |
 
-| Raw Log Fields | Normalized Text |
-|----------------|-----------------|
-| TCP, blocked, Nmap, /admin/config | Blocked TCP connection detected by firewall log using nmap scanner targeting high-risk path |
-| HTTP, allowed, Chrome, /login | Permitted HTTP request recorded by application log accessing authentication path |
-| HTTPS, blocked, SQLMap, /api/login | Blocked HTTPS request detected by IDS using sqlmap scanner targeting authentication path |
+### Confusion Matrix
 
-### Threat Classification
+| True \ Predicted | benign | suspicious | malicious |
+|------------------|--------|------------|-----------|
+| **benign** | 13,575 | 0 | 0 |
+| **suspicious** | 1,955 | 1,994 | 0 |
+| **malicious** | 1,337 | 650 | 0 |
 
-| Label | Meaning | Distribution |
-|-------|---------|--------------|
-| benign | Normal network traffic | ~70% |
-| suspicious | Anomalous but not confirmed | ~20% |
-| malicious | Confirmed threat behavior | ~10% |
+### Key Findings
 
-### Severity Scoring
+- **Benign detection is perfect**: 100% recall, all 13,575 benign logs correctly classified
+- **Suspicious detection is moderate**: 50.5% recall, model distinguishes ~half of suspicious logs
+- **Malicious class collapse**: Model predicts all malicious logs as benign or suspicious, indicating class imbalance during training
+- **High throughput**: 16.3 logs/sec sustained over 20 minutes with avg 11ms response time
+- **Low latency**: P95 at 25ms, suitable for real-time SOC integration
 
-| Confidence | Malicious | Suspicious | Benign |
-|------------|-----------|------------|--------|
-| > 95% | Critical | High | Low |
-| > 85% | High | Medium | Low |
-| > 70% | Medium | Medium | Informational |
-| < 70% | Informational | Informational | Informational |
+### Improvement Recommendations
 
-## Training the AI Model
+1. **Address class imbalance**: Oversample malicious logs or use class weights during training
+2. **Fine-tune threshold**: Adjust decision boundary to improve malicious recall
+3. **Add more training data**: Increase malicious examples in the training set
+4. **Ensemble approach**: Combine with rule-based malicious detection for higher recall
 
-The complete training process is in `notebooks/thekavach.ipynb`.
+## Platform Performance Test
 
-| Step | Task | Output |
-|------|------|--------|
-| 1 | Dataset exploration | Attack patterns, distributions |
-| 2 | Log normalization engine | Raw logs → semantic text |
-| 3 | Data cleaning & labeling | Clean dataset with integer labels |
-| 4 | Structured features | Bytes, protocol, path risk, scanner flags |
-| 5 | Tokenization | MiniLM tokens, train/test split |
-| 6 | Model training | Fine-tuned MiniLM classifier |
-| 7 | Severity engine | SOC-style intelligence reports |
-| 8 | SHAP explainability | Feature importance analysis |
-| 9 | ONNX optimization | Fast inference export |
-| 10 | HuggingFace upload | Deployed model on HF Hub |
+Tested against live deployment at https://thekavach.onrender.com.
 
-The platform automatically downloads and uses the model when AI endpoints are called.
+![Performance Metrics](docs/metrics_chart.png)
+
+| Metric | Result |
+|--------|--------|
+| Total logs generated | 1,074 |
+| Unique source IPs | 475 |
+| Unique dest IPs | 402 |
+| Avg response time | 495ms |
+| Median response | 486ms |
+| Min response | 367ms |
+| Max response | 735ms |
+| Stream rate | 4.9 logs/sec |
+| IP entropy (src) | 8.6 |
+| IP entropy (dest) | 8.4 |
+| Bytes mean | 32,818 |
+| Bytes std dev | 18,737 |
+
+### Threat Distribution
+
+| Label | Count | Percentage |
+|-------|-------|------------|
+| benign | 739 | 68.8% |
+| suspicious | 226 | 21.0% |
+| malicious | 109 | 10.1% |
+
+### Protocol Distribution
+
+| Protocol | Count |
+|----------|-------|
+| TCP | 158 |
+| HTTP | 147 |
+| UDP | 143 |
+| FTP | 138 |
+| DNS | 127 |
+| ICMP | 125 |
+| SSH | 121 |
+| HTTPS | 115 |
+
+The synthetic data shows strong randomness with 475 unique source IPs and 402 unique destination IPs across 1,074 generated logs. The threat distribution closely matches the target ratio of 70/20/10. All 8 protocols are represented with near-equal distribution, confirming the randomization engine produces diverse, realistic network traffic.
 
 ## Memory Optimization
 
@@ -267,51 +408,6 @@ The `models/app.py` file provides a Gradio interface. Deploy by creating a new S
 | Container | Docker (python:3.11-slim) | Portable deployment |
 | Cloud | Render | Free-tier hosting |
 
-## Performance Test Results
-
-Tested against live deployment at https://thekavach.onrender.com on 2026-05-19.
-
-![Performance Metrics](docs/metrics_chart.png)
-
-| Metric | Result |
-|--------|--------|
-| Total logs generated | 1,074 |
-| Unique source IPs | 475 |
-| Unique dest IPs | 402 |
-| Avg response time | 495ms |
-| Median response | 486ms |
-| Min response | 367ms |
-| Max response | 735ms |
-| Stream rate | 4.9 logs/sec |
-| IP entropy (src) | 8.6 |
-| IP entropy (dest) | 8.4 |
-| Bytes mean | 32,818 |
-| Bytes std dev | 18,737 |
-
-### Threat Distribution
-
-| Label | Count | Percentage |
-|-------|-------|------------|
-| benign | 739 | 68.8% |
-| suspicious | 226 | 21.0% |
-| malicious | 109 | 10.1% |
-
-### Protocol Distribution
-
-| Protocol | Count |
-|----------|-------|
-| TCP | 158 |
-| HTTP | 147 |
-| UDP | 143 |
-| FTP | 138 |
-| DNS | 127 |
-| ICMP | 125 |
-| SSH | 121 |
-| HTTPS | 115 |
-
-The synthetic data shows strong randomness with 475 unique source IPs and 402 unique destination IPs across 1,074 generated logs. The threat distribution closely matches the target ratio of 70/20/10. All 8 protocols are represented with near-equal distribution, confirming the randomization engine produces diverse, realistic network traffic.
-
 ## License
 
 MIT License. Use freely for research, education, and portfolio projects.
-```

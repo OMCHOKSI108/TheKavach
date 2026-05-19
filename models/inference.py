@@ -112,11 +112,32 @@ class ThreatIntelligenceEngine:
         return reasons
 
     def predict(self, log_text):
-        scores = self.classifier(log_text)[0]
-        scores_dict = {}
-        for s in scores:
-            label = s['label'].replace('LABEL_', '')
-            scores_dict[label] = s['score']
+        result = self.classifier(log_text)[0]
+        if isinstance(result, list):
+            scores_dict = {}
+            for s in result:
+                label = s['label'].replace('LABEL_', '')
+                scores_dict[label] = s['score']
+        else:
+            label_key = result['label'].replace('LABEL_', '')
+            idx = int(label_key.split('_')[-1]) if '_' in label_key else int(label_key)
+            scores_dict = {label_key: result['score']}
+            label_scores = {k: 0.0 for k in self.LABEL_NAMES}
+            label_scores[self.LABEL_NAMES[idx]] = result['score']
+            threat = self.LABEL_NAMES[idx]
+            confidence = result['score']
+            severity = self._get_severity(threat, confidence)
+            explanation = self._get_explanation(log_text, threat, confidence)
+            conf_pct = str(round(confidence * 100, 1)) + '%'
+            return {
+                'threat': threat,
+                'confidence': round(confidence, 4),
+                'confidence_pct': conf_pct,
+                'severity': severity['severity'],
+                'all_scores': {k: round(v, 4) for k, v in label_scores.items()},
+                'explanation': explanation
+            }
+
         label_scores = {}
         for key, val in scores_dict.items():
             idx = int(key.split('_')[-1]) if '_' in key else int(key)
@@ -152,4 +173,10 @@ class CybersecurityAI:
         return [self.analyze_log(log) for log in raw_logs]
 
 
-ai_engine = CybersecurityAI()
+ai_engine = None
+
+def get_ai_engine(hf_model="OMCHOKSI108/TheKavach"):
+    global ai_engine
+    if ai_engine is None:
+        ai_engine = CybersecurityAI(hf_model=hf_model)
+    return ai_engine
