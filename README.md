@@ -1,5 +1,7 @@
 ﻿# TheKavach - AI Cybersecurity Threat Intelligence Platform
 
+[![Kaggle](https://kaggle.com/static/images/open-in-kaggle.svg)](https://www.kaggle.com/code/omchoksi04/thekavach)
+
 TheKavach is a synthetic cybersecurity telemetry streaming platform that generates real-time network security logs and analyzes them using AI. Instead of providing static CSV datasets, it operates as a live data service where developers and ML engineers obtain API keys and consume continuously generated firewall, network, and application logs. The platform transforms a 6-million-row dataset into a dynamic simulation environment mirroring how modern SOCs and SIEM systems operate.
 
 | Feature | Detail |
@@ -30,7 +32,7 @@ The platform has three core layers:
 
 ## Project Structure
 
-
+```
 TheKavach/
 ├── backend/
 │   ├── main.py                 # FastAPI app entry, serves frontend
@@ -59,6 +61,7 @@ TheKavach/
 ├── Dockerfile                  # Optimized container (4 chunks only)
 ├── render.yaml                 # Render deployment blueprint
 └── README.md
+```
 
 
 ## API Endpoints
@@ -131,6 +134,8 @@ curl "http://localhost:8000/api/logs?count=50&threat_label=malicious" \
 
 `ash
 # TheKavach - AI Cybersecurity Threat Intelligence Platform
+
+[![Kaggle](https://kaggle.com/static/images/open-in-kaggle.svg)](https://www.kaggle.com/code/omchoksi04/thekavach)
 
 TheKavach is a synthetic cybersecurity telemetry streaming platform that generates real-time network security logs and analyzes them with AI. It provides a live data service (via API keys) that streams continuously generated firewall, network, and application logs. The platform converts a large static CSV dataset into a dynamic simulation environment that mirrors modern SOC/SIEM workflows.
 
@@ -396,3 +401,4 @@ The `models/app.py` file provides a Gradio interface. Deploy by creating a new S
 ## License
 
 MIT License. Use freely for research, education, and portfolio projects.
+
