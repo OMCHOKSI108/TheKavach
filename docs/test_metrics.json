@@ -1,0 +1,144 @@
+{
+  "test_time": "2026-05-19T13:19:11.567459",
+  "base_url": "https://thekavach.onrender.com",
+  "health": {
+    "status": "healthy",
+    "dataset_rows": 800000,
+    "uptime": "1:12:31.761361"
+  },
+  "api_key": "tk_443c4f29c1454cf3b...",
+  "total_logs_generated": 1000,
+  "status": {
+    "status": "operational",
+    "uptime": {
+      "raw": "1:12:57.847824",
+      "days": 0,
+      "hours": 1,
+      "minutes": 12,
+      "seconds": 57,
+      "formatted": "0d 1h 12m 57s"
+    },
+    "dataset": {
+      "total_rows": 800000,
+      "columns": [
+        "timestamp",
+        "source_ip",
+        "dest_ip",
+        "protocol",
+        "action",
+        "threat_label",
+        "log_type",
+        "bytes_transferred",
+        "user_agent",
+        "request_path"
+      ]
+    },
+    "api_keys_generated": 1,
+    "version": "2.0.0",
+    "started_at": "2026-05-19T06:36:41.941746",
+    "current_time": "2026-05-19T07:49:39.789625"
+  },
+  "stats": {
+    "total_keys_generated": 1,
+    "dataset_columns": [
+      "timestamp",
+      "source_ip",
+      "dest_ip",
+      "protocol",
+      "action",
+      "threat_label",
+      "log_type",
+      "bytes_transferred",
+      "user_agent",
+      "request_path"
+    ],
+    "threat_distribution": {
+      "unique_count": 3,
+      "top_values": {
+        "benign": 735398,
+        "suspicious": 48219,
+        "malicious": 16383
+      }
+    },
+    "protocol_distribution": {
+      "unique_count": 7,
+      "top_values": {
+        "TCP": 199856,
+        "HTTP": 160068,
+        "HTTPS": 159903,
+        "UDP": 120160,
+        "ICMP": 79826,
+        "SSH": 40342,
+        "FTP": 39845
+      }
+    },
+    "log_type_distribution": {
+      "unique_count": 3,
+      "top_values": {
+        "firewall": 267088,
+        "application": 266647,
+        "ids": 266265
+      }
+    }
+  },
+  "ai_status": {
+    "available": false,
+    "model": null,
+    "capabilities": [],
+    "note": "Run notebooks/Final.ipynb in Colab, then push model to OMCHOKSI108/TheKavach on HuggingFace"
+  },
+  "randomness": {
+    "unique_source_ips": 475,
+    "unique_dest_ips": 402,
+    "unique_protocols": 8,
+    "protocol_distribution": {
+      "TCP": 158,
+      "HTTPS": 115,
+      "DNS": 127,
+      "SSH": 121,
+      "ICMP": 125,
+      "FTP": 138,
+      "HTTP": 147,
+      "UDP": 143
+    },
+    "threat_distribution": {
+      "malicious": 109,
+      "benign": 739,
+      "suspicious": 226
+    },
+    "action_distribution": {
+      "blocked": 584,
+      "allowed": 490
+    },
+    "bytes_mean": 32817.8,
+    "bytes_std": 18736.7,
+    "bytes_min": 127,
+    "bytes_max": 65491,
+    "ip_entropy_src": 8.6,
+    "ip_entropy_dest": 8.35
+  },
+  "speed": {
+    "batch_request_count": 20,
+    "batch_mean_ms": 494.8,
+    "batch_median_ms": 485.6,
+    "batch_min_ms": 366.6,
+    "batch_max_ms": 734.6,
+    "batch_p95_ms": 734.6,
+    "stream_logs_received": 74,
+    "stream_duration_sec": 15,
+    "stream_rate_logs_per_sec": 4.9
+  },
+  "total_unique_source_ips": 475,
+  "total_unique_dest_ips": 402,
+  "threat_ratio": {
+    "malicious": 109,
+    "benign": 739,
+    "suspicious": 226
+  },
+  "bytes_stats": {
+    "mean": 32817.8,
+    "std": 18736.7,
+    "min": 127,
+    "max": 65491
+  }
+}

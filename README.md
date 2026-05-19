@@ -402,8 +402,54 @@ The `models/app.py` file provides a Gradio interface. Deploy by creating a new S
 | Container | Docker (python:3.11-slim)      | Portable deployment             |
 | Cloud     | Render                         | Free-tier hosting               |
 
+
+## Performance Test Results
+
+Tested against live deployment at https://thekavach.onrender.com on 2026-05-19.
+
+![Performance Metrics](docs/metrics_chart.png)
+
+| Metric | Result |
+|--------|--------|
+| Total logs generated | 1,074 |
+| Unique source IPs | 475 |
+| Unique dest IPs | 402 |
+| Avg response time | 495ms |
+| Median response | 486ms |
+| Min response | 367ms |
+| Max response | 735ms |
+| Stream rate | 4.9 logs/sec |
+| IP entropy (src) | 8.6 |
+| IP entropy (dest) | 8.4 |
+| Bytes mean | 32,818 |
+| Bytes std dev | 18,737 |
+
+### Threat Distribution
+
+| Label | Count | Percentage |
+|-------|-------|------------|
+| benign | 739 | 68.8% |
+| suspicious | 226 | 21.0% |
+| malicious | 109 | 10.1% |
+
+### Protocol Distribution
+
+| Protocol | Count |
+|----------|-------|
+| TCP | 158 |
+| HTTP | 147 |
+| UDP | 143 |
+| FTP | 138 |
+| DNS | 127 |
+| ICMP | 125 |
+| SSH | 121 |
+| HTTPS | 115 |
+
+The synthetic data shows strong randomness with 475 unique source IPs and 402 unique destination IPs across 1,074 generated logs. The threat distribution closely matches the target ratio of 70/20/10. All 8 protocols are represented with near-equal distribution, confirming the randomization engine produces diverse, realistic network traffic.
+
 ## License
 
 MIT License. Use freely for research, education, and portfolio projects.
+
 
 
