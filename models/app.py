@@ -1,9 +1,8 @@
 ﻿import gradio as gr
-import json
 from transformers import pipeline
 import torch
 
-MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+MODEL_NAME = "OMCHOKSI108/TheKavach"
 
 class LogNormalizer:
     PROTOCOL_MAP = {
@@ -50,9 +49,10 @@ class LogNormalizer:
         path_risk = cls.classify_path_risk(row.get('request_path', '/'))
         bytes_cat = cls.bytes_category(row.get('bytes_transferred', 0))
         log_type = row.get('log_type', 'unknown')
+        action_cap = action.capitalize()
         if scanner != 'standard browser':
-            return f\"{action.capitalize()} {protocol} detected by {log_type} log using {scanner} scanner targeting {path_risk} with {bytes_cat}.\"
-        return f\"{action.capitalize()} {protocol} recorded by {log_type} log accessing {path_risk} with {bytes_cat}.\"
+            return action_cap + ' ' + protocol + ' detected by ' + log_type + ' log using ' + scanner + ' scanner targeting ' + path_risk + ' with ' + bytes_cat + '.'
+        return action_cap + ' ' + protocol + ' recorded by ' + log_type + ' log accessing ' + path_risk + ' with ' + bytes_cat + '.'
 
 
 class ThreatEngine:
@@ -85,7 +85,7 @@ class ThreatEngine:
         t = text.lower()
         if 'scanner' in t:
             s = 'nmap' if 'nmap' in t else 'sqlmap' if 'sqlmap' in t else 'security scanner'
-            reasons.append(f'{s.capitalize()} scanner detected')
+            reasons.append(s.capitalize() + ' scanner detected')
         if 'blocked' in t or 'denied' in t:
             reasons.append('Request blocked/denied by security controls')
         if 'high-risk' in t:
@@ -100,7 +100,10 @@ class ThreatEngine:
 
     def predict(self, log_text):
         scores = self.classifier(log_text)[0]
-        scores_dict = {s['label'].replace('LABEL_', ''): s['score'] for s in scores}
+        scores_dict = {}
+        for s in scores:
+            label = s['label'].replace('LABEL_', '')
+            scores_dict[label] = s['score']
         label_scores = {}
         for key, val in scores_dict.items():
             idx = int(key.split('_')[-1]) if '_' in key else int(key)
@@ -123,23 +126,11 @@ def analyze_log(protocol, action, user_agent, request_path, bytes_transferred, l
     normalized = LogNormalizer.normalize(row)
     threat, confidence, severity, scores, explanation = engine.predict(normalized)
 
-    score_text = \"\\n\".join([f\"  {k}: {v*100:.1f}%\" for k, v in scores.items()])
-    explanation_text = \"\\n\".join([f\"  - {r}\" for r in explanation])
+    score_text = '\n'.join(['  ' + k + ': ' + str(round(v*100, 1)) + '%' for k, v in scores.items()])
+    explanation_text = '\n'.join(['  - ' + r for r in explanation])
 
-    result = f\"\"\"THREAT: {threat.upper()}
-CONFIDENCE: {confidence*100:.1f}%
-SEVERITY: {severity}
+    result = 'THREAT: ' + threat.upper() + '\nCONFIDENCE: ' + str(round(confidence*100, 1)) + '%\nSEVERITY: ' + severity + '\n\nSCORES:\n' + score_text + '\n\nEXPLANATION:\n' + explanation_text + '\n\nNORMALIZED LOG:\n' + normalized
 
-SCORES:
-{score_text}
-
-EXPLANATION:
-{explanation_text}
-
-NORMALIZED LOG:
-{normalized}\"\"\"
-
-    color = '#ef4444' if threat == 'malicious' else '#eab308' if threat == 'suspicious' else '#22c55e'
     return result
 
 demo = gr.Interface(
@@ -154,7 +145,7 @@ demo = gr.Interface(
     ],
     outputs=gr.Textbox(label='Threat Analysis Result', lines=15),
     title='TheKavach - AI Cybersecurity Threat Intelligence',
-    description='Enter network log details and get AI-powered threat analysis with severity scoring and explainability.',
+    description='Enter network log details and get AI-powered threat analysis with severity scoring and explainability. Model: OMCHOKSI108/TheKavach',
     examples=[
         ['TCP', 'blocked', 'Nmap Scripting Engine', '/admin/config', 45000, 'firewall'],
         ['HTTP', 'allowed', 'Mozilla/5.0 Chrome', '/login', 5000, 'application'],

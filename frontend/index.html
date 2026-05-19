@@ -62,7 +62,7 @@
                     AI Cybersecurity<br>Threat Intelligence
                 </h1>
                 <p class="text-muted text-base max-w-xl mb-6 leading-relaxed">
-                    Stream synthetic cybersecurity logs and analyze them with AI. Powered by <code class="text-accent">OMCHOKSI108/CyberKavach</code> MiniLM model trained on 6M+ logs.
+                    Stream synthetic cybersecurity logs and analyze them with AI. Powered by <code class="text-accent">OMCHOKSI108/TheKavach</code> MiniLM model trained on 6M+ logs.
                 </p>
                 <div class="flex gap-3 text-xs">
                     <span class="bg-zinc-900 px-3 py-1.5 rounded border border-subtle text-zinc-400">6M+ Dataset</span>
@@ -228,7 +228,7 @@ print(f"Threat: {result['threat']}, Severity: {result['severity']}")</code></pre
                 <h2 class="text-sm font-medium mb-3 text-white">AI Architecture</h2>
                 <div class="bg-card rounded border border-subtle p-5">
                     <pre class="text-xs text-zinc-400 leading-relaxed">Raw Logs -> LogNormalizer -> Canonical semantic text
-    -> MiniLM (OMCHOKSI108/CyberKavach) -> Semantic embeddings
+    -> MiniLM (OMCHOKSI108/TheKavach) -> Semantic embeddings
     -> Threat Classification -> benign/suspicious/malicious
     -> Severity Engine -> Critical/High/Medium/Low
     -> Explainability -> SHAP + rule-based reasons
@@ -330,7 +330,7 @@ print(f"Threat: {result['threat']}, Severity: {result['severity']}")</code></pre
                 const aiRes = await fetch('/api/ai/status');
                 const aiData = await aiRes.json();
                 if (aiData.available) {
-                    document.getElementById('sysAI').textContent = 'CyberKavach';
+                    document.getElementById('sysAI').textContent = 'TheKavach';
                     document.getElementById('sysAI').className = 'text-accent font-mono text-xs';
                 } else {
                     document.getElementById('sysAI').textContent = 'Not trained yet';

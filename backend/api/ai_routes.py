@@ -27,7 +27,7 @@ def get_ai_engine():
         if project_root not in sys.path:
             sys.path.insert(0, project_root)
         from models.inference import CybersecurityAI
-        return CybersecurityAI(hf_model="OMCHOKSI108/CyberKavach")
+        return CybersecurityAI(hf_model="OMCHOKSI108/TheKavach")
     except Exception as e:
         return None
 
@@ -35,7 +35,7 @@ def get_ai_engine():
 async def analyze_log(request: LogAnalysisRequest):
     engine = get_ai_engine()
     if not engine:
-        raise HTTPException(status_code=503, detail="AI model not loaded. Train model and push to HuggingFace as OMCHOKSI108/CyberKavach")
+        raise HTTPException(status_code=503, detail="AI model not loaded. Train model and push to HuggingFace as OMCHOKSI108/TheKavach")
     try:
         result = engine.analyze_log(request.model_dump())
         return result
@@ -71,7 +71,7 @@ async def ai_status():
     available = engine is not None
     return {
         "available": available,
-        "model": "OMCHOKSI108/CyberKavach" if available else None,
+        "model": "OMCHOKSI108/TheKavach" if available else None,
         "capabilities": [
             "Single log analysis",
             "Batch log analysis (up to 100)",
@@ -81,5 +81,5 @@ async def ai_status():
             "Confidence levels",
             "Explainable predictions"
         ] if available else [],
-        "note": "Run notebooks/01_cybersecurity_threat_intelligence.ipynb in Colab, then push model to OMCHOKSI108/CyberKavach on HuggingFace" if not available else None
+        "note": "Run notebooks/Final.ipynb in Colab, then push model to OMCHOKSI108/TheKavach on HuggingFace" if not available else None
     }
