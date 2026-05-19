@@ -194,7 +194,7 @@ The AI pipeline converts raw structured logs into semantic text, then classifies
 
 ## Training the AI Model
 
-The complete training process is in `notebooks/01_cybersecurity_threat_intelligence.ipynb`.
+The complete training process is in `notebooks/thekavach.ipynb`.
 
 | Step | Task | Output |
 |------|------|--------|
