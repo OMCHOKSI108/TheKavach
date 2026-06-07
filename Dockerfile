@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir --compile -r requirements.txt
 
 COPY backend/ ./backend/
 COPY frontend/ ./frontend/
+COPY models/ ./models/
 
 # Only copy 4 chunks for stats (~112MB) instead of all 30
 COPY dataset/chunks/data_chunk_000.csv ./dataset/chunks/data_chunk_000.csv

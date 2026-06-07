@@ -3,16 +3,22 @@ from datetime import datetime
 from typing import Dict
 from fastapi import Request, HTTPException
 
+# TODO: In production, replace in-memory store with Redis or PostgreSQL.
+# Example:
+#   import redis
+#   api_key_store = redis.Redis(host="localhost", port=6379, db=0)
 api_key_store: Dict[str, dict] = {}
+
 
 def generate_api_key(name: str) -> str:
     key = f"tk_{uuid.uuid4().hex}"
     api_key_store[key] = {
         "name": name,
         "created_at": datetime.now().isoformat(),
-        "request_count": 0
+        "request_count": 0,
     }
     return key
+
 
 async def api_key_middleware(request: Request, call_next):
     path = request.url.path
@@ -38,7 +44,10 @@ async def api_key_middleware(request: Request, call_next):
 
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Missing API key. Use: Authorization: Bearer <your-key>")
+        raise HTTPException(
+            status_code=401,
+            detail="Missing API key. Use: Authorization: Bearer <your-key>",
+        )
 
     key = auth_header.split(" ", 1)[1]
     if key not in api_key_store:
