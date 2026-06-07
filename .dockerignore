@@ -19,5 +19,4 @@ notebooks
 docs
 docker
 render.yaml
-models
 dataset/cybersecurity_threat_detection_logs.csv
