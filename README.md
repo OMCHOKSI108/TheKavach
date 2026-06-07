@@ -158,6 +158,112 @@ pip install pytest  # if not installed
 pytest tests/ -v
 ```
 
+## AI Model Evaluation (20-Min Test)
+
+Evaluated `OMCHOKSI108/TheKavach` on 19,511 synthetically generated logs over 20 minutes.
+
+![AI Model Evaluation](docs/model_eval_chart.png)
+
+### Overall Metrics
+
+| Metric | Value |
+|--------|-------|
+| Total Logs Analyzed | 19,511 |
+| Accuracy | 79.8% |
+| Macro Precision | 0.520 |
+| Macro Recall | 0.502 |
+| Macro F1-Score | 0.499 |
+| Throughput | 16.3 logs/sec |
+| Avg Response Time | 11.1 ms |
+| P95 Response Time | 25.1 ms |
+
+### Per-Class Performance
+
+| Class | Precision | Recall | F1-Score | Support |
+|-------|-----------|--------|----------|---------|
+| benign | 0.805 | 1.000 | 0.892 | 13,575 |
+| suspicious | 0.754 | 0.505 | 0.605 | 3,949 |
+| malicious | 0.000 | 0.000 | 0.000 | 1,987 |
+
+### Confusion Matrix
+
+| True \ Predicted | benign | suspicious | malicious |
+|------------------|--------|------------|-----------|
+| **benign** | 13,575 | 0 | 0 |
+| **suspicious** | 1,955 | 1,994 | 0 |
+| **malicious** | 1,337 | 650 | 0 |
+
+### Key Findings
+
+- **Benign detection is perfect**: 100% recall, all 13,575 benign logs correctly classified
+- **Suspicious detection is moderate**: 50.5% recall, model distinguishes ~half of suspicious logs
+- **Malicious class collapse**: Model predicts all malicious logs as benign or suspicious, indicating class imbalance during training
+- **High throughput**: 16.3 logs/sec sustained over 20 minutes with avg 11ms response time
+- **Low latency**: P95 at 25ms, suitable for real-time SOC integration
+
+### Improvement Recommendations
+
+1. **Address class imbalance**: Oversample malicious logs or use class weights during training
+2. **Fine-tune threshold**: Adjust decision boundary to improve malicious recall
+3. **Add more training data**: Increase malicious examples in the training set
+4. **Ensemble approach**: Combine with rule-based malicious detection for higher recall
+
+## Platform Performance Test
+
+Tested against live deployment at https://thekavach.onrender.com.
+
+![Performance Metrics](docs/metrics_chart.png)
+
+| Metric | Result |
+|--------|--------|
+| Total logs generated | 1,074 |
+| Unique source IPs | 475 |
+| Unique dest IPs | 402 |
+| Avg response time | 495ms |
+| Median response | 486ms |
+| Min response | 367ms |
+| Max response | 735ms |
+| Stream rate | 4.9 logs/sec |
+| IP entropy (src) | 8.6 |
+| IP entropy (dest) | 8.4 |
+| Bytes mean | 32,818 |
+| Bytes std dev | 18,737 |
+
+### Threat Distribution
+
+| Label | Count | Percentage |
+|-------|-------|------------|
+| benign | 739 | 68.8% |
+| suspicious | 226 | 21.0% |
+| malicious | 109 | 10.1% |
+
+### Protocol Distribution
+
+| Protocol | Count |
+|----------|-------|
+| TCP | 158 |
+| HTTP | 147 |
+| UDP | 143 |
+| FTP | 138 |
+| DNS | 127 |
+| ICMP | 125 |
+| SSH | 121 |
+| HTTPS | 115 |
+
+The synthetic data shows strong randomness with 475 unique source IPs and 402 unique destination IPs across 1,074 generated logs. The threat distribution closely matches the target ratio of 70/20/10. All 8 protocols are represented with near-equal distribution, confirming the randomization engine produces diverse, realistic network traffic.
+
+## Memory Optimization
+
+The original CSV is split into chunks. The lazy loader keeps a small number of chunks in memory to reduce RAM usage:
+
+| Approach | Memory Usage | Load Time |
+|----------|--------------|-----------|
+| Load all rows | ~2-3 GB | 30-60s |
+| Lazy chunk loading (2 chunks) | ~56 MB | 2-5s |
+| Docker (4 chunks in image) | ~112 MB | Instant |
+
+The Dockerfile copies only a small set of chunks to keep the container size manageable for Render's free tier.
+
 ## Known Limitations
 
 1. **Synthetic training data**: The underlying MiniLM model is trained on synthetic/semi-synthetic cybersecurity logs. Real-world SOC data may yield different performance.
@@ -201,16 +307,20 @@ docker run -p 8000:8000 -e ALLOWED_ORIGINS="http://localhost:3000,http://localho
 
 ## Technology Stack
 
-| Category | Technology |
-|----------|------------|
-| Backend | FastAPI, Python, Uvicorn |
-| ML Model | HuggingFace MiniLM (all-MiniLM-L6-v2) |
-| Hybrid Detection | Regex-based security heuristics |
-| Data | pandas, chunked CSV loading |
-| Frontend | HTML, TailwindCSS |
-| Streaming | Server-Sent Events |
-| Container | Docker (python:3.11-slim) |
-| Cloud | Render, HuggingFace Spaces |
+| Category | Technology | Purpose |
+|----------|------------|---------|
+| Backend | FastAPI | REST API, async, auto docs |
+| Data | pandas | CSV loading, chunk management |
+| AI | Hugging Face Transformers | MiniLM text classification |
+| AI | PyTorch | Tensor operations |
+| AI | scikit-learn | Random Forest explainer |
+| AI | SHAP | Feature importance |
+| AI | ONNX | Optimized inference |
+| Hybrid Detection | Regex Security Heuristics | Rule-based fallback layer |
+| Frontend | HTML + TailwindCSS | Dark-themed UI |
+| Streaming | Server-Sent Events | Real-time log delivery |
+| Container | Docker (python:3.11-slim) | Portable deployment |
+| Cloud | Render | Free-tier hosting |
 
 ## License
 
